@@ -41,6 +41,7 @@ const MENU: Record<string, MenuItem[]> = {
     { name: "Xoài Caramel", price: 50000 },
     { name: "Dâu Caramel", price: 50000 },
     { name: "Chuối Caramel", price: 50000 },
+    { name: "Crepe Kem", price: 70000 },
   ],
   "Savory Crepes": [
     { name: "Mật Ong Phô Mai", price: 55000 },
@@ -48,6 +49,20 @@ const MENU: Record<string, MenuItem[]> = {
     { name: "Ba Chỉ Phô Mai", price: 60000 },
     { name: "Xúc Xích Phô Mai", price: 60000 },
     { name: "Cá Ngừ Phô Mai", price: 60000 },
+  ],
+  "Ice Cream": [
+    { name: "Kem Vani", price: 30000 },
+    { name: "Kem Bạc Hà Chip", price: 30000 },
+    { name: "Kem Dâu Tây", price: 30000 },
+    { name: "Kem Hồng Trà Trân Châu", price: 30000 },
+    { name: "Kem Sô-cô-la Bí", price: 30000 },
+    { name: "Kem Trà Xanh", price: 30000 },
+    { name: "Kem Dừa Non", price: 30000 },
+    { name: "Kem Xoài Tươi", price: 30000 },
+    { name: "Kem Sữa Chua", price: 30000 },
+    { name: "Kem Bánh Oreo", price: 30000 },
+    { name: "Kem Chanh Leo", price: 30000 },
+    { name: "Kem Sầu Riêng", price: 30000 },
   ],
   Drinks: [
     { name: "Sô-cô-la Nóng", price: 45000 },
@@ -59,26 +74,25 @@ const MENU: Record<string, MenuItem[]> = {
   ],
 };
 
+// Extras cho crepe ngọt: +5k (trái cây/sauce)
 const SWEET_EXTRAS: Extra[] = [
-  { name: "Nutella", price: 10000 },
-  { name: "Whipping Cream", price: 10000 },
+  { name: "Nutella", price: 5000 },
   { name: "Sô-cô-la", price: 5000 },
-  { name: "Dâu", price: 5000 },
-  { name: "Chuối", price: 5000 },
   { name: "Xoài", price: 5000 },
+  { name: "Chuối", price: 5000 },
+  { name: "Dâu", price: 5000 },
   { name: "Caramel", price: 5000 },
-  { name: "Mật Ong", price: 5000 },
   { name: "Đường", price: 5000 },
 ];
 
+// Extras cho crepe mặn: +10k (thịt/phô mai/cream)
 const SAVORY_EXTRAS: Extra[] = [
+  { name: "Whipping Cream", price: 10000 },
+  { name: "Phô Mai", price: 10000 },
   { name: "Xúc Xích", price: 10000 },
   { name: "Thịt Nguội", price: 10000 },
   { name: "Cá Ngừ", price: 10000 },
   { name: "Ba Chỉ", price: 10000 },
-  { name: "Phô Mai", price: 10000 },
-  { name: "Nutella", price: 10000 },
-  { name: "Whipping Cream", price: 10000 },
 ];
 
 function getExtrasForCategory(cat: string): Extra[] | null {
@@ -92,6 +106,7 @@ const CATEGORIES = Object.keys(MENU);
 const CAT_ICONS: Record<string, string> = {
   "Sweet Crepes": "🍫",
   "Savory Crepes": "🧀",
+  "Ice Cream": "🍦",
   Drinks: "🥤",
 };
 
