@@ -1,11 +1,21 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────
 type MenuItem = { name: string; price: number };
 type CartItem = MenuItem & { qty: number };
 type PayMethod = "cash" | "transfer";
+type StatsData = {
+  summary: {
+    order_count: number;
+    revenue: number;
+    cash_revenue: number;
+    transfer_revenue: number;
+  };
+  daily: { date: string; order_count: number; revenue: number }[];
+  topItems: { name: string; qty: number; revenue: number }[];
+};
 
 // ── Menu Data ──────────────────────────────────────────────────────────
 const MENU: Record<string, MenuItem[]> = {
@@ -77,8 +87,170 @@ function fmt(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
 }
 
+function fmtDate(d: string) {
+  return new Date(d).toLocaleDateString("vi-VN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+// ── Stats View ─────────────────────────────────────────────────────────
+function StatsView({ onBack }: { onBack: () => void }) {
+  const [range, setRange] = useState<"today" | "week" | "month">("today");
+  const [data, setData] = useState<StatsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchStats = useCallback(async (r: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/stats?range=${r}`);
+      const json = await res.json();
+      setData(json);
+    } catch {
+      /* ignore */
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchStats(range);
+  }, [range, fetchStats]);
+
+  const rangeLabels = { today: "Hôm nay", week: "Tuần này", month: "Tháng này" };
+
+  return (
+    <div className="flex min-h-dvh flex-col bg-amber-50">
+      {/* Header */}
+      <div className="flex items-center gap-3 bg-amber-700 px-4 py-3 text-white">
+        <button onClick={onBack} className="text-2xl active:opacity-70">
+          ←
+        </button>
+        <h1 className="text-lg font-bold">Thống kê</h1>
+      </div>
+
+      {/* Range Tabs */}
+      <div className="flex gap-2 bg-amber-100 px-3 py-2.5">
+        {(["today", "week", "month"] as const).map((r) => (
+          <button
+            key={r}
+            onClick={() => setRange(r)}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+              range === r
+                ? "bg-amber-700 text-white"
+                : "bg-white/60 text-amber-800 active:bg-amber-200"
+            }`}
+          >
+            {rangeLabels[r]}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-300 border-t-amber-700" />
+        </div>
+      ) : data ? (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <p className="text-sm text-gray-500">Doanh thu</p>
+              <p className="text-2xl font-bold text-amber-700">
+                {fmt(Number(data.summary.revenue))}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <p className="text-sm text-gray-500">Số đơn</p>
+              <p className="text-2xl font-bold text-amber-700">
+                {data.summary.order_count}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <p className="text-sm text-gray-500">Tiền mặt</p>
+              <p className="text-xl font-bold text-green-700">
+                {fmt(Number(data.summary.cash_revenue))}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <p className="text-sm text-gray-500">Chuyển khoản</p>
+              <p className="text-xl font-bold text-blue-700">
+                {fmt(Number(data.summary.transfer_revenue))}
+              </p>
+            </div>
+          </div>
+
+          {/* Top Items */}
+          {data.topItems.length > 0 && (
+            <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <h3 className="mb-3 text-base font-bold text-gray-800">
+                Món bán chạy
+              </h3>
+              <div className="space-y-2">
+                {data.topItems.map((item, i) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center gap-3 text-sm"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
+                      {i + 1}
+                    </span>
+                    <span className="flex-1 truncate font-medium">
+                      {item.name}
+                    </span>
+                    <span className="text-gray-500">x{item.qty}</span>
+                    <span className="font-semibold text-amber-700">
+                      {fmt(Number(item.revenue))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Daily Breakdown */}
+          {data.daily.length > 1 && (
+            <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <h3 className="mb-3 text-base font-bold text-gray-800">
+                Theo ngày
+              </h3>
+              <div className="space-y-2">
+                {data.daily.map((d) => (
+                  <div
+                    key={d.date}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="text-gray-600">{fmtDate(d.date)}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-400">
+                        {d.order_count} đơn
+                      </span>
+                      <span className="font-semibold text-amber-700">
+                        {fmt(Number(d.revenue))}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {data.summary.order_count === 0 && (
+            <p className="py-12 text-center text-gray-400">
+              Chưa có đơn hàng nào
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="py-12 text-center text-gray-400">Lỗi tải dữ liệu</p>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ─────────────────────────────────────────────────────
 export default function POS() {
+  const [view, setView] = useState<"pos" | "stats">("pos");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -94,6 +266,11 @@ export default function POS() {
     method: PayMethod;
     cashGiven?: number;
   } | null>(null);
+
+  // DB setup on first load
+  useEffect(() => {
+    fetch("/api/setup").catch(() => {});
+  }, []);
 
   // Derived
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
@@ -145,9 +322,21 @@ export default function POS() {
     setCartOpen(false);
   }
 
-  function confirmPayment() {
+  async function confirmPayment() {
     if (!payMethod) return;
     if (payMethod === "cash" && cashGiven < total) return;
+
+    // Save order to database
+    try {
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: cart, total, method: payMethod }),
+      });
+    } catch {
+      /* still show receipt even if save fails */
+    }
+
     setReceipt({
       items: [...cart],
       total,
@@ -163,6 +352,11 @@ export default function POS() {
     setCart([]);
     setSearch("");
     setCategory(CATEGORIES[0]);
+  }
+
+  // ── Stats View ─────────────────────────────────────────────────────
+  if (view === "stats") {
+    return <StatsView onBack={() => setView("pos")} />;
   }
 
   // ── Receipt View ───────────────────────────────────────────────────
@@ -363,6 +557,13 @@ export default function POS() {
               </button>
             )}
           </div>
+          <button
+            onClick={() => setView("stats")}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-600 text-xl active:bg-amber-800"
+            title="Thống kê"
+          >
+            📊
+          </button>
         </div>
 
         {/* Category Tabs - horizontal scroll, large touch targets */}
