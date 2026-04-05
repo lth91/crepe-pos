@@ -54,7 +54,6 @@ const MENU: Record<string, MenuItem[]> = {
     { name: "Kem Vani", price: 30000 },
     { name: "Kem Bạc Hà Chip", price: 30000 },
     { name: "Kem Dâu Tây", price: 30000 },
-    { name: "Kem Hồng Trà Trân Châu", price: 30000 },
     { name: "Kem Sô-cô-la Bí", price: 30000 },
     { name: "Kem Trà Xanh", price: 30000 },
     { name: "Kem Dừa Non", price: 30000 },
@@ -62,7 +61,6 @@ const MENU: Record<string, MenuItem[]> = {
     { name: "Kem Sữa Chua", price: 30000 },
     { name: "Kem Bánh Oreo", price: 30000 },
     { name: "Kem Chanh Leo", price: 30000 },
-    { name: "Kem Sầu Riêng", price: 30000 },
   ],
   Drinks: [
     { name: "Sô-cô-la Nóng", price: 45000 },
