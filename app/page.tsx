@@ -4,7 +4,8 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────
 type MenuItem = { name: string; price: number };
-type CartItem = MenuItem & { qty: number };
+type Extra = { name: string; price: number };
+type CartItem = MenuItem & { qty: number; extras?: Extra[]; cartKey: string };
 type PayMethod = "cash" | "transfer" | "card";
 type StatsData = {
   summary: {
@@ -56,23 +57,35 @@ const MENU: Record<string, MenuItem[]> = {
     { name: "Trà Dâu", price: 30000 },
     { name: "Trà Đào Cam Sả", price: 40000 },
   ],
-  "Extras (+)": [
-    { name: "+ Nutella", price: 10000 },
-    { name: "+ Whipping Cream", price: 10000 },
-    { name: "+ Sô-cô-la", price: 5000 },
-    { name: "+ Dâu", price: 5000 },
-    { name: "+ Chuối", price: 5000 },
-    { name: "+ Xoài", price: 5000 },
-    { name: "+ Caramel", price: 5000 },
-    { name: "+ Mật Ong", price: 5000 },
-    { name: "+ Đường", price: 5000 },
-    { name: "+ Xúc Xích", price: 10000 },
-    { name: "+ Thịt Nguội", price: 10000 },
-    { name: "+ Cá Ngừ", price: 10000 },
-    { name: "+ Ba Chỉ", price: 10000 },
-    { name: "+ Phô Mai", price: 10000 },
-  ],
 };
+
+const SWEET_EXTRAS: Extra[] = [
+  { name: "Nutella", price: 10000 },
+  { name: "Whipping Cream", price: 10000 },
+  { name: "Sô-cô-la", price: 5000 },
+  { name: "Dâu", price: 5000 },
+  { name: "Chuối", price: 5000 },
+  { name: "Xoài", price: 5000 },
+  { name: "Caramel", price: 5000 },
+  { name: "Mật Ong", price: 5000 },
+  { name: "Đường", price: 5000 },
+];
+
+const SAVORY_EXTRAS: Extra[] = [
+  { name: "Xúc Xích", price: 10000 },
+  { name: "Thịt Nguội", price: 10000 },
+  { name: "Cá Ngừ", price: 10000 },
+  { name: "Ba Chỉ", price: 10000 },
+  { name: "Phô Mai", price: 10000 },
+  { name: "Nutella", price: 10000 },
+  { name: "Whipping Cream", price: 10000 },
+];
+
+function getExtrasForCategory(cat: string): Extra[] | null {
+  if (cat === "Sweet Crepes") return SWEET_EXTRAS;
+  if (cat === "Savory Crepes") return SAVORY_EXTRAS;
+  return null;
+}
 
 const CATEGORIES = Object.keys(MENU);
 
@@ -80,11 +93,24 @@ const CAT_ICONS: Record<string, string> = {
   "Sweet Crepes": "🍫",
   "Savory Crepes": "🧀",
   Drinks: "🥤",
-  "Extras (+)": "➕",
 };
 
 function fmt(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
+}
+
+function makeCartKey(name: string, extras?: Extra[]) {
+  if (!extras || extras.length === 0) return name;
+  return name + " + " + extras.map((e) => e.name).sort().join(", ");
+}
+
+function itemTotal(item: CartItem) {
+  const extrasSum = item.extras?.reduce((s, e) => s + e.price, 0) || 0;
+  return (item.price + extrasSum) * item.qty;
+}
+
+function itemUnitPrice(item: CartItem) {
+  return item.price + (item.extras?.reduce((s, e) => s + e.price, 0) || 0);
 }
 
 function fmtDate(d: string) {
@@ -382,6 +408,13 @@ export default function POS() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
 
+  // Extras modal
+  const [extrasModal, setExtrasModal] = useState<{
+    item: MenuItem;
+    availableExtras: Extra[];
+  } | null>(null);
+  const [selectedExtras, setSelectedExtras] = useState<Extra[]>([]);
+
   // Payment flow
   const [showPayment, setShowPayment] = useState(false);
   const [payMethod, setPayMethod] = useState<PayMethod | null>(null);
@@ -399,7 +432,7 @@ export default function POS() {
   }, []);
 
   // Derived
-  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const total = cart.reduce((s, i) => s + itemTotal(i), 0);
   const itemCount = cart.reduce((s, i) => s + i.qty, 0);
 
   const displayedItems = useMemo(() => {
@@ -410,29 +443,78 @@ export default function POS() {
       .filter((i) => i.name.toLowerCase().includes(q));
   }, [category, search]);
 
-  // Cart actions
-  function addToCart(item: MenuItem) {
+  // Find which category an item belongs to
+  function findCategory(itemName: string): string | null {
+    for (const [cat, items] of Object.entries(MENU)) {
+      if (items.some((i) => i.name === itemName)) return cat;
+    }
+    return null;
+  }
+
+  // Handle menu item tap
+  function handleItemTap(item: MenuItem) {
+    const cat = search ? findCategory(item.name) : category;
+    const extras = cat ? getExtrasForCategory(cat) : null;
+    if (extras) {
+      setExtrasModal({ item, availableExtras: extras });
+      setSelectedExtras([]);
+    } else {
+      addToCartDirect(item);
+    }
+  }
+
+  // Toggle an extra in the selection
+  function toggleExtra(extra: Extra) {
+    setSelectedExtras((prev) =>
+      prev.some((e) => e.name === extra.name)
+        ? prev.filter((e) => e.name !== extra.name)
+        : [...prev, extra]
+    );
+  }
+
+  // Confirm extras and add to cart
+  function confirmExtras() {
+    if (!extrasModal) return;
+    const { item } = extrasModal;
+    const extras = selectedExtras.length > 0 ? [...selectedExtras] : undefined;
+    const key = makeCartKey(item.name, extras);
     setCart((prev) => {
-      const idx = prev.findIndex((c) => c.name === item.name);
+      const idx = prev.findIndex((c) => c.cartKey === key);
       if (idx >= 0) {
         const next = [...prev];
         next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
         return next;
       }
-      return [...prev, { ...item, qty: 1 }];
+      return [...prev, { ...item, qty: 1, extras, cartKey: key }];
+    });
+    setExtrasModal(null);
+    setSelectedExtras([]);
+  }
+
+  // Add item without extras (drinks, etc.)
+  function addToCartDirect(item: MenuItem) {
+    const key = makeCartKey(item.name);
+    setCart((prev) => {
+      const idx = prev.findIndex((c) => c.cartKey === key);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+        return next;
+      }
+      return [...prev, { ...item, qty: 1, cartKey: key }];
     });
   }
 
-  function updateQty(name: string, delta: number) {
+  function updateQty(key: string, delta: number) {
     setCart((prev) =>
       prev
-        .map((c) => (c.name === name ? { ...c, qty: c.qty + delta } : c))
+        .map((c) => (c.cartKey === key ? { ...c, qty: c.qty + delta } : c))
         .filter((c) => c.qty > 0)
     );
   }
 
-  function removeItem(name: string) {
-    setCart((prev) => prev.filter((c) => c.name !== name));
+  function removeItem(key: string) {
+    setCart((prev) => prev.filter((c) => c.cartKey !== key));
   }
 
   function clearCart() {
@@ -503,13 +585,20 @@ export default function POS() {
 
           <div className="mb-4 space-y-3">
             {receipt.items.map((item) => (
-              <div key={item.name} className="flex justify-between text-base">
-                <span>
-                  {item.name} x{item.qty}
-                </span>
-                <span className="font-medium">
-                  {fmt(item.price * item.qty)}
-                </span>
+              <div key={item.cartKey}>
+                <div className="flex justify-between text-base">
+                  <span>
+                    {item.name} x{item.qty}
+                  </span>
+                  <span className="font-medium">
+                    {fmt(itemTotal(item))}
+                  </span>
+                </div>
+                {item.extras && item.extras.length > 0 && (
+                  <p className="text-xs text-amber-600 ml-1">
+                    + {item.extras.map((e) => e.name).join(", ")}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -606,18 +695,25 @@ export default function POS() {
             <div className="space-y-2">
               {cart.map((item) => (
                 <div
-                  key={item.name}
+                  key={item.cartKey}
                   className="flex items-center gap-3 rounded-xl bg-gray-50 p-3"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-base font-medium">
                       {item.name}
                     </p>
-                    <p className="text-sm text-gray-500">{fmt(item.price)}</p>
+                    {item.extras && item.extras.length > 0 && (
+                      <p className="truncate text-xs text-amber-600">
+                        + {item.extras.map((e) => e.name).join(", ")}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500">
+                      {fmt(itemUnitPrice(item))}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => updateQty(item.name, -1)}
+                      onClick={() => updateQty(item.cartKey, -1)}
                       className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-200 text-xl font-bold active:bg-gray-300"
                     >
                       −
@@ -626,14 +722,14 @@ export default function POS() {
                       {item.qty}
                     </span>
                     <button
-                      onClick={() => updateQty(item.name, 1)}
+                      onClick={() => updateQty(item.cartKey, 1)}
                       className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-200 text-xl font-bold active:bg-gray-300"
                     >
                       +
                     </button>
                   </div>
                   <button
-                    onClick={() => removeItem(item.name)}
+                    onClick={() => removeItem(item.cartKey)}
                     className="p-1 text-lg text-gray-400 active:text-red-500"
                   >
                     ✕
@@ -732,20 +828,22 @@ export default function POS() {
           )}
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {displayedItems.map((item) => {
-              const inCart = cart.find((c) => c.name === item.name);
+              const inCartCount = cart
+                .filter((c) => c.name === item.name)
+                .reduce((s, c) => s + c.qty, 0);
               return (
                 <button
                   key={item.name}
-                  onClick={() => addToCart(item)}
+                  onClick={() => handleItemTap(item)}
                   className={`relative flex flex-col items-start rounded-2xl p-4 shadow-sm transition-all active:scale-[0.97] ${
-                    inCart
+                    inCartCount > 0
                       ? "bg-amber-50 ring-2 ring-amber-400"
                       : "bg-white active:bg-gray-50"
                   }`}
                 >
-                  {inCart && (
+                  {inCartCount > 0 && (
                     <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white shadow">
-                      {inCart.qty}
+                      {inCartCount}
                     </span>
                   )}
                   <span className="text-[15px] font-medium leading-tight">
@@ -779,6 +877,75 @@ export default function POS() {
 
       {/* ── Cart (bottom sheet on mobile, sidebar on desktop) ──────── */}
       {cartSheet}
+
+      {/* ── Extras Modal ──────────────────────────────────────────── */}
+      {extrasModal && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 lg:items-center">
+          <div className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-xl lg:rounded-2xl">
+            <div className="mb-4 flex justify-center lg:hidden">
+              <div className="h-1.5 w-12 rounded-full bg-gray-300" />
+            </div>
+            <h3 className="mb-1 text-xl font-bold">{extrasModal.item.name}</h3>
+            <p className="mb-4 text-sm text-gray-500">
+              {fmt(extrasModal.item.price)} · Chọn thêm topping?
+            </p>
+
+            <div className="mb-5 grid grid-cols-2 gap-2 max-h-[40dvh] overflow-y-auto">
+              {extrasModal.availableExtras.map((extra) => {
+                const selected = selectedExtras.some(
+                  (e) => e.name === extra.name
+                );
+                return (
+                  <button
+                    key={extra.name}
+                    onClick={() => toggleExtra(extra)}
+                    className={`flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-colors ${
+                      selected
+                        ? "bg-amber-600 text-white"
+                        : "bg-gray-100 text-gray-700 active:bg-gray-200"
+                    }`}
+                  >
+                    <span>{extra.name}</span>
+                    <span className={selected ? "text-amber-200" : "text-gray-400"}>
+                      +{fmt(extra.price)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedExtras.length > 0 && (
+              <div className="mb-4 rounded-xl bg-amber-50 p-3 text-sm">
+                <span className="text-gray-600">Tổng: </span>
+                <span className="font-bold text-amber-700">
+                  {fmt(
+                    extrasModal.item.price +
+                      selectedExtras.reduce((s, e) => s + e.price, 0)
+                  )}
+                </span>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setExtrasModal(null);
+                  setSelectedExtras([]);
+                }}
+                className="flex-1 rounded-2xl bg-gray-100 py-4 text-base font-semibold text-gray-700 active:bg-gray-200"
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={confirmExtras}
+                className="flex-1 rounded-2xl bg-amber-600 py-4 text-base font-semibold text-white active:bg-amber-700"
+              >
+                {selectedExtras.length > 0 ? "Thêm với topping" : "Thêm không topping"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Payment Modal ──────────────────────────────────────────── */}
       {showPayment && (
