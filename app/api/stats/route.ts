@@ -39,7 +39,8 @@ export async function GET(req: Request) {
       COUNT(*)::int AS order_count,
       COALESCE(SUM(total), 0)::bigint AS revenue,
       COALESCE(SUM(CASE WHEN method = 'cash' THEN total ELSE 0 END), 0)::bigint AS cash_revenue,
-      COALESCE(SUM(CASE WHEN method = 'transfer' THEN total ELSE 0 END), 0)::bigint AS transfer_revenue
+      COALESCE(SUM(CASE WHEN method = 'transfer' THEN total ELSE 0 END), 0)::bigint AS transfer_revenue,
+      COALESCE(SUM(CASE WHEN method = 'card' THEN total ELSE 0 END), 0)::bigint AS card_revenue
     FROM orders
     WHERE created_at >= ${start} AND created_at < ${end}
   `;

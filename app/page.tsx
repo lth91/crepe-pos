@@ -5,13 +5,14 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 // ── Types ──────────────────────────────────────────────────────────────
 type MenuItem = { name: string; price: number };
 type CartItem = MenuItem & { qty: number };
-type PayMethod = "cash" | "transfer";
+type PayMethod = "cash" | "transfer" | "card";
 type StatsData = {
   summary: {
     order_count: number;
     revenue: number;
     cash_revenue: number;
     transfer_revenue: number;
+    card_revenue: number;
   };
   daily: { date: string; order_count: number; revenue: number }[];
   topItems: { name: string; qty: number; revenue: number }[];
@@ -153,28 +154,29 @@ function StatsView({ onBack }: { onBack: () => void }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-white p-4 shadow-sm">
+            <div className="rounded-2xl bg-white p-4 shadow-sm col-span-2">
               <p className="text-sm text-gray-500">Doanh thu</p>
-              <p className="text-2xl font-bold text-amber-700">
+              <p className="text-3xl font-bold text-amber-700">
                 {fmt(Number(data.summary.revenue))}
               </p>
-            </div>
-            <div className="rounded-2xl bg-white p-4 shadow-sm">
-              <p className="text-sm text-gray-500">Số đơn</p>
-              <p className="text-2xl font-bold text-amber-700">
-                {data.summary.order_count}
-              </p>
+              <p className="mt-1 text-sm text-gray-400">{data.summary.order_count} đơn</p>
             </div>
             <div className="rounded-2xl bg-white p-4 shadow-sm">
               <p className="text-sm text-gray-500">Tiền mặt</p>
-              <p className="text-xl font-bold text-green-700">
+              <p className="text-lg font-bold text-green-700">
                 {fmt(Number(data.summary.cash_revenue))}
               </p>
             </div>
             <div className="rounded-2xl bg-white p-4 shadow-sm">
               <p className="text-sm text-gray-500">Chuyển khoản</p>
-              <p className="text-xl font-bold text-blue-700">
+              <p className="text-lg font-bold text-blue-700">
                 {fmt(Number(data.summary.transfer_revenue))}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 shadow-sm col-span-2">
+              <p className="text-sm text-gray-500">Thẻ</p>
+              <p className="text-lg font-bold text-purple-700">
+                {fmt(Number(data.summary.card_revenue))}
               </p>
             </div>
           </div>
@@ -316,7 +318,7 @@ function HistoryView({ onBack }: { onBack: () => void }) {
                   <p className="text-sm text-gray-500">{fmtTime(order.created_at)}</p>
                   <p className="text-sm text-gray-400">
                     {order.items.length} món ·{" "}
-                    {order.method === "cash" ? "Tiền mặt" : "CK"}
+                    {order.method === "cash" ? "Tiền mặt" : order.method === "transfer" ? "CK" : "Thẻ"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -520,7 +522,7 @@ export default function POS() {
             <div className="mt-2 flex justify-between text-base text-gray-600">
               <span>Phương thức</span>
               <span>
-                {receipt.method === "cash" ? "Tiền mặt" : "Chuyển khoản"}
+                {receipt.method === "cash" ? "Tiền mặt" : receipt.method === "transfer" ? "Chuyển khoản" : "Thẻ"}
               </span>
             </div>
             {receipt.method === "cash" && receipt.cashGiven != null && (
@@ -813,6 +815,16 @@ export default function POS() {
                 }`}
               >
                 Chuyển khoản
+              </button>
+              <button
+                onClick={() => setPayMethod("card")}
+                className={`flex-1 rounded-2xl py-4 text-base font-semibold transition-colors ${
+                  payMethod === "card"
+                    ? "bg-amber-600 text-white"
+                    : "bg-gray-100 text-gray-700 active:bg-gray-200"
+                }`}
+              >
+                Thẻ
               </button>
             </div>
 
