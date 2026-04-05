@@ -74,7 +74,7 @@ const MENU: Record<string, MenuItem[]> = {
   ],
 };
 
-// Extras cho crepe ngọt: +5k (trái cây/sauce)
+// Extras cho crepe ngọt
 const SWEET_EXTRAS: Extra[] = [
   { name: "Nutella", price: 5000 },
   { name: "Sô-cô-la", price: 5000 },
@@ -83,11 +83,11 @@ const SWEET_EXTRAS: Extra[] = [
   { name: "Dâu", price: 5000 },
   { name: "Caramel", price: 5000 },
   { name: "Đường", price: 5000 },
+  { name: "Whipping Cream", price: 10000 },
 ];
 
-// Extras cho crepe mặn: +10k (thịt/phô mai/cream)
+// Extras cho crepe mặn: +10k (thịt/phô mai)
 const SAVORY_EXTRAS: Extra[] = [
-  { name: "Whipping Cream", price: 10000 },
   { name: "Phô Mai", price: 10000 },
   { name: "Xúc Xích", price: 10000 },
   { name: "Thịt Nguội", price: 10000 },
