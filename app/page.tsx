@@ -372,8 +372,8 @@ function HistoryView({ onBack }: { onBack: () => void }) {
 
               {expanded === order.id && (
                 <div className="border-t px-4 pb-4 pt-3 space-y-1">
-                  {order.items.map((item) => (
-                    <div key={item.name} className="flex justify-between text-sm">
+                  {order.items.map((item, idx) => (
+                    <div key={`${item.name}-${idx}`} className="flex justify-between text-sm">
                       <span className="text-gray-600">
                         {item.name} x{item.qty}
                       </span>
