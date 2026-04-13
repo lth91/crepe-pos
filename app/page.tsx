@@ -1069,10 +1069,10 @@ export default function POS() {
                   placeholder="0"
                 />
                 <div className="grid grid-cols-4 gap-2">
-                  {[50000, 100000, 200000, 500000].map((v) => (
+                  {[5000, 10000, 20000, 50000, 100000, 200000, 500000].map((v) => (
                     <button
                       key={v}
-                      onClick={() => setCashGiven(v)}
+                      onClick={() => setCashGiven((prev) => prev + v)}
                       className="rounded-xl bg-amber-100 py-3 text-sm font-semibold text-amber-800 active:bg-amber-200"
                     >
                       {fmt(v)}
