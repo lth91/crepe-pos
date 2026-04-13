@@ -70,6 +70,9 @@ const MENU: Record<string, MenuItem[]> = {
     { name: "Trà Dâu", price: 30000 },
     { name: "Trà Đào Cam Sả", price: 40000 },
     { name: "Nước Suối", price: 10000 },
+    { name: "Nước Ngọt Chai", price: 15000 },
+    { name: "Nước Ngọt Lon", price: 20000 },
+    { name: "Beer", price: 25000 },
   ],
   Topping: [
     { name: "Sốt Nutella", price: 5000 },
