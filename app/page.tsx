@@ -69,6 +69,22 @@ const MENU: Record<string, MenuItem[]> = {
     { name: "Trà Vải", price: 30000 },
     { name: "Trà Dâu", price: 30000 },
     { name: "Trà Đào Cam Sả", price: 40000 },
+    { name: "Nước Suối", price: 10000 },
+  ],
+  Topping: [
+    { name: "Sốt Nutella", price: 5000 },
+    { name: "Sốt Sô-cô-la", price: 5000 },
+    { name: "Xoài", price: 5000 },
+    { name: "Chuối", price: 5000 },
+    { name: "Dâu", price: 5000 },
+    { name: "Sốt Caramel", price: 5000 },
+    { name: "Đường", price: 5000 },
+    { name: "Whipping Cream", price: 10000 },
+    { name: "Phô Mai", price: 10000 },
+    { name: "Xúc Xích", price: 10000 },
+    { name: "Thịt Nguội", price: 10000 },
+    { name: "Cá Ngừ", price: 10000 },
+    { name: "Ba Chỉ", price: 10000 },
   ],
 };
 
@@ -106,7 +122,10 @@ const CAT_ICONS: Record<string, string> = {
   "Savory Crepes": "🧀",
   "Ice Cream": "🍦",
   Drinks: "🥤",
+  Topping: "🍯",
 };
+
+const OWNER_PIN = "1234";
 
 function fmt(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
@@ -438,6 +457,25 @@ export default function POS() {
     method: PayMethod;
     cashGiven?: number;
   } | null>(null);
+
+  // Owner PIN protection
+  const [pinModal, setPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+
+  function handlePinSubmit() {
+    if (pinInput === OWNER_PIN) {
+      setIsOwner(true);
+      setPinModal(false);
+      setPinInput("");
+      setPinError(false);
+      setView("stats");
+    } else {
+      setPinError(true);
+      setPinInput("");
+    }
+  }
 
   // DB setup on first load
   useEffect(() => {
@@ -804,7 +842,15 @@ export default function POS() {
             📋
           </button>
           <button
-            onClick={() => setView("stats")}
+            onClick={() => {
+              if (isOwner) {
+                setView("stats");
+              } else {
+                setPinModal(true);
+                setPinInput("");
+                setPinError(false);
+              }
+            }}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-600 text-xl active:bg-amber-800"
             title="Thống kê"
           >
@@ -1064,6 +1110,63 @@ export default function POS() {
                   !payMethod ||
                   (payMethod === "cash" && cashGiven < total)
                 }
+                className="flex-1 rounded-2xl bg-amber-600 py-4 text-base font-semibold text-white active:bg-amber-700 disabled:bg-gray-300 disabled:text-gray-500"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PIN Modal ──────────────────────────────────────────── */}
+      {pinModal && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 lg:items-center">
+          <div className="w-full max-w-sm rounded-t-3xl bg-white p-6 shadow-xl lg:rounded-2xl">
+            <div className="mb-4 flex justify-center lg:hidden">
+              <div className="h-1.5 w-12 rounded-full bg-gray-300" />
+            </div>
+            <h3 className="mb-1 text-xl font-bold">Nhập mã PIN</h3>
+            <p className="mb-4 text-sm text-gray-500">
+              Chỉ chủ cửa hàng được xem thống kê
+            </p>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={pinInput}
+              onChange={(e) => {
+                setPinInput(e.target.value.replace(/\D/g, ""));
+                setPinError(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handlePinSubmit();
+              }}
+              className={`mb-4 w-full rounded-xl border-2 px-4 py-3 text-center text-2xl font-semibold tracking-widest outline-none focus:border-amber-500 ${
+                pinError ? "border-red-400" : ""
+              }`}
+              placeholder="••••"
+              autoFocus
+            />
+            {pinError && (
+              <p className="mb-3 text-center text-sm text-red-500">
+                Mã PIN không đúng
+              </p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setPinModal(false);
+                  setPinInput("");
+                  setPinError(false);
+                }}
+                className="flex-1 rounded-2xl bg-gray-100 py-4 text-base font-semibold text-gray-700 active:bg-gray-200"
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={handlePinSubmit}
+                disabled={pinInput.length < 4}
                 className="flex-1 rounded-2xl bg-amber-600 py-4 text-base font-semibold text-white active:bg-amber-700 disabled:bg-gray-300 disabled:text-gray-500"
               >
                 Xác nhận
