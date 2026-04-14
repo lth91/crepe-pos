@@ -123,6 +123,12 @@ export function PaymentModal({ cart, total, onClose, onSuccess }: Props) {
                   {fmt(v)}
                 </button>
               ))}
+              <button
+                onClick={() => setCashGiven(0)}
+                className="rounded-xl border border-red-200 py-3 text-sm font-medium text-red-500 active:bg-red-50"
+              >
+                Xoá
+              </button>
             </div>
             {cashGiven > 0 && (
               <div className="mt-3 rounded-xl bg-zinc-50 p-4 text-center">
