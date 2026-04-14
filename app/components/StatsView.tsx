@@ -50,7 +50,7 @@ const CAT_TEXT_COLORS: Record<string, string> = {
   Topping: "text-yellow-700",
 };
 
-type RangeType = "today" | "week" | "month" | "custom";
+type RangeType = "today" | "yesterday" | "week" | "month" | "custom";
 
 // ── Component ────────────────────────────────────────────────────────
 export function StatsView({
@@ -121,6 +121,7 @@ export function StatsView({
 
   const rangeLabels: Record<RangeType, string> = {
     today: "Hôm nay",
+    yesterday: "Hôm qua",
     week: "Tuần này",
     month: "Tháng này",
     custom: "Tùy chọn",
@@ -128,6 +129,7 @@ export function StatsView({
 
   const prevLabels: Record<RangeType, string> = {
     today: "hôm qua",
+    yesterday: "hôm kia",
     week: "tuần trước",
     month: "tháng trước",
     custom: "kỳ trước",
@@ -211,7 +213,7 @@ export function StatsView({
       {/* Range Tabs */}
       <div className="bg-amber-700 px-3 pb-3">
         <div className="flex gap-1.5">
-          {(["today", "week", "month", "custom"] as const).map((r) => (
+          {(["today", "yesterday", "week", "month", "custom"] as const).map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}

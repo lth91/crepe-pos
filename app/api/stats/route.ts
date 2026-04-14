@@ -29,6 +29,19 @@ function dateRange(range: string, now: Date, customFrom?: string, customTo?: str
     const prevStartDate = new Date(prevEndDate.getTime() - durationMs);
     prevStart = prevStartDate.toISOString();
     prevEnd = prevEndDate.toISOString();
+  } else if (range === "yesterday") {
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    start = yesterday.toISOString();
+    end = today.toISOString();
+    // Compare with day before yesterday
+    const dayBefore = new Date(yesterday);
+    dayBefore.setDate(yesterday.getDate() - 1);
+    prevStart = dayBefore.toISOString();
+    prevEnd = start;
   } else if (range === "week") {
     const day = now.getDay();
     const mon = new Date(now);
