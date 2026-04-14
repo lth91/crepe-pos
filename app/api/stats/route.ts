@@ -1,11 +1,18 @@
+import { cookies } from "next/headers";
 import { getDb } from "@/lib/db";
 
 export async function GET(req: Request) {
+  // Auth check: require owner cookie
+  const cookieStore = await cookies();
+  const auth = cookieStore.get("owner_auth");
+  if (!auth) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const range = searchParams.get("range") || "today";
   const sql = getDb();
 
-  // Calculate date boundaries in JS, pass as parameters
   const now = new Date();
   let start: string;
   let end: string;
@@ -13,7 +20,7 @@ export async function GET(req: Request) {
   if (range === "week") {
     const day = now.getDay();
     const mon = new Date(now);
-    mon.setDate(now.getDate() - ((day + 6) % 7)); // Monday
+    mon.setDate(now.getDate() - ((day + 6) % 7));
     mon.setHours(0, 0, 0, 0);
     const sun = new Date(mon);
     sun.setDate(mon.getDate() + 7);
@@ -25,7 +32,6 @@ export async function GET(req: Request) {
     start = first.toISOString();
     end = last.toISOString();
   } else {
-    // today
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
