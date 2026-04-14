@@ -2,6 +2,7 @@
 
 import type { CartItem } from "@/lib/types";
 import { fmt, itemUnitPrice } from "@/lib/menu";
+import { X, Minus, Plus, Trash2 } from "@/lib/icons";
 
 type Props = {
   cart: CartItem[];
@@ -62,9 +63,9 @@ export function CartSheet({
             )}
             <button
               onClick={() => setCartOpen(false)}
-              className="text-xl text-zinc-300 hover:text-zinc-500 lg:hidden"
+              className="text-zinc-300 hover:text-zinc-500 lg:hidden"
             >
-              ✕
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -91,23 +92,23 @@ export function CartSheet({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => updateQty(item.cartKey, -1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-sm font-medium text-zinc-600 active:bg-zinc-100"
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 active:bg-zinc-100"
                     >
-                      −
+                      <Minus size={14} />
                     </button>
                     <span className="w-7 text-center text-sm font-semibold">{item.qty}</span>
                     <button
                       onClick={() => updateQty(item.cartKey, 1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-sm font-medium text-zinc-600 active:bg-zinc-100"
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 active:bg-zinc-100"
                     >
-                      +
+                      <Plus size={14} />
                     </button>
                   </div>
                   <button
                     onClick={() => removeItem(item.cartKey)}
                     className="text-zinc-300 hover:text-red-500"
                   >
-                    ✕
+                    <Trash2 size={14} />
                   </button>
                 </div>
               ))}

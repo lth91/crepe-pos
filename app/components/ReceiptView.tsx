@@ -2,6 +2,7 @@
 
 import type { CartItem, PayMethod } from "@/lib/types";
 import { fmt, itemTotal } from "@/lib/menu";
+import { CheckCircle2 } from "@/lib/icons";
 
 type Props = {
   items: CartItem[];
@@ -15,9 +16,10 @@ export function ReceiptView({ items, total, method, cashGiven, onNewOrder }: Pro
   return (
     <div className="flex min-h-dvh items-center justify-center bg-zinc-50 p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-sm">
-        <div className="mb-6 text-center">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <CheckCircle2 size={36} className="mb-2 text-green-500" />
           <h2 className="text-xl font-semibold text-zinc-900">Crepe House</h2>
-          <p className="mt-1 text-sm text-green-600 font-medium">Thanh toán thành công</p>
+          <p className="mt-0.5 text-sm text-green-600 font-medium">Thanh toán thành công</p>
         </div>
 
         <div className="mb-4 space-y-2.5">

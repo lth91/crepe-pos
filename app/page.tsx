@@ -5,12 +5,12 @@ import type { MenuItem, Extra, CartItem, PayMethod } from "@/lib/types";
 import {
   MENU,
   CATEGORIES,
-  CAT_ICONS,
   getExtrasForCategory,
   fmt,
   makeCartKey,
   itemTotal,
 } from "@/lib/menu";
+import { Search, X, ClipboardList, BarChart3, CategoryIcon } from "@/lib/icons";
 import { StatsView } from "./components/StatsView";
 import { HistoryView } from "./components/HistoryView";
 import { CartSheet } from "./components/CartSheet";
@@ -140,38 +140,39 @@ export default function POS() {
         <header className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3">
           <h1 className="text-lg font-semibold text-zinc-900">Crepe House</h1>
           <div className="relative ml-auto flex-1 max-w-xs">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               type="text"
               placeholder="Tìm món..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3.5 py-2 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
+              className="w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-9 pr-8 py-2 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
               >
-                ✕
+                <X size={15} />
               </button>
             )}
           </div>
           <button
             onClick={() => setView("history")}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-zinc-500 transition-colors hover:bg-zinc-100 active:bg-zinc-200"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 active:bg-zinc-200"
             title="Lịch sử"
           >
-            📋
+            <ClipboardList size={18} />
           </button>
           <button
             onClick={() => {
               if (isOwner) setView("stats");
               else setPinModal(true);
             }}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-zinc-500 transition-colors hover:bg-zinc-100 active:bg-zinc-200"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 active:bg-zinc-200"
             title="Thống kê"
           >
-            📊
+            <BarChart3 size={18} />
           </button>
         </header>
 
@@ -188,7 +189,7 @@ export default function POS() {
                     : "text-zinc-500 hover:bg-zinc-100 active:bg-zinc-200"
                 }`}
               >
-                <span className="text-sm">{CAT_ICONS[cat]}</span>
+                <CategoryIcon category={cat} size={15} />
                 <span>{cat}</span>
               </button>
             ))}

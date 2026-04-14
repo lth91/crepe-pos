@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Order } from "@/lib/types";
 import { fmt } from "@/lib/menu";
+import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Loader2 } from "@/lib/icons";
 
 export function HistoryView({ onBack }: { onBack: () => void }) {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -47,24 +48,24 @@ export function HistoryView({ onBack }: { onBack: () => void }) {
   return (
     <div className="flex min-h-dvh flex-col bg-white">
       <header className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3">
-        <button onClick={onBack} className="text-xl text-zinc-400 hover:text-zinc-600">
-          ←
+        <button onClick={onBack} className="text-zinc-400 hover:text-zinc-600">
+          <ArrowLeft size={18} />
         </button>
         <h1 className="text-base font-semibold text-zinc-900">Lịch sử đơn hàng</h1>
       </header>
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-600" />
+          <Loader2 size={20} className="animate-spin text-zinc-400" />
         </div>
       ) : error ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4">
           <p className="text-sm text-zinc-400">{error}</p>
           <button
             onClick={() => fetchOrders(page)}
-            className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-medium text-white"
+            className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-5 py-2 text-sm font-medium text-white"
           >
-            Thử lại
+            <RotateCcw size={13} /> Thử lại
           </button>
         </div>
       ) : orders.length === 0 ? (
@@ -88,13 +89,12 @@ export function HistoryView({ onBack }: { onBack: () => void }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-zinc-800">{fmt(order.total)}</span>
-                  <span
-                    className={`text-xs text-zinc-300 transition-transform ${
+                  <ChevronDown
+                    size={14}
+                    className={`text-zinc-300 transition-transform ${
                       expanded === order.id ? "rotate-180" : ""
                     }`}
-                  >
-                    ▼
-                  </span>
+                  />
                 </div>
               </button>
 
@@ -120,9 +120,9 @@ export function HistoryView({ onBack }: { onBack: () => void }) {
               <button
                 onClick={() => setPage(page - 1)}
                 disabled={page <= 1}
-                className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 active:bg-zinc-50 disabled:opacity-30"
+                className="flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 active:bg-zinc-50 disabled:opacity-30"
               >
-                ← Trước
+                <ChevronLeft size={14} /> Trước
               </button>
               <span className="text-xs text-zinc-400">
                 {page}/{totalPages}
@@ -130,9 +130,9 @@ export function HistoryView({ onBack }: { onBack: () => void }) {
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page >= totalPages}
-                className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 active:bg-zinc-50 disabled:opacity-30"
+                className="flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 active:bg-zinc-50 disabled:opacity-30"
               >
-                Sau →
+                Sau <ChevronRight size={14} />
               </button>
             </div>
           )}

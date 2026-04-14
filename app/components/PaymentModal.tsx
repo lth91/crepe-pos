@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CartItem, PayMethod } from "@/lib/types";
 import { fmt, CASH_DENOMINATIONS } from "@/lib/menu";
+import { Banknote, ArrowLeftRight, CreditCard, Loader2 } from "@/lib/icons";
 
 type Props = {
   cart: CartItem[];
@@ -78,11 +79,11 @@ export function PaymentModal({ cart, total, onClose, onSuccess }: Props) {
         <div className="mb-5 flex gap-2">
           {(
             [
-              ["cash", "Tiền mặt"],
-              ["transfer", "Chuyển khoản"],
-              ["card", "Thẻ"],
+              ["cash", "Tiền mặt", Banknote],
+              ["transfer", "Chuyển khoản", ArrowLeftRight],
+              ["card", "Thẻ", CreditCard],
             ] as const
-          ).map(([method, label]) => (
+          ).map(([method, label, Icon]) => (
             <button
               key={method}
               onClick={() => {
@@ -90,13 +91,14 @@ export function PaymentModal({ cart, total, onClose, onSuccess }: Props) {
                 if (method === "cash") setCashGiven(0);
                 setError(null);
               }}
-              className={`flex-1 rounded-lg py-3 text-sm font-medium transition-all ${
+              className={`flex flex-1 flex-col items-center gap-1.5 rounded-lg py-3 text-sm font-medium transition-all ${
                 payMethod === method
                   ? "bg-zinc-900 text-white"
                   : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 active:bg-zinc-50"
               }`}
             >
-              {label}
+              <Icon size={18} />
+              <span className="text-xs">{label}</span>
             </button>
           ))}
         </div>
@@ -158,7 +160,7 @@ export function PaymentModal({ cart, total, onClose, onSuccess }: Props) {
             disabled={!payMethod || (payMethod === "cash" && cashGiven < total) || saving}
             className="flex-1 rounded-xl bg-zinc-900 py-3.5 text-sm font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
-            {saving ? "Đang xử lý..." : "Xác nhận"}
+            {saving ? <><Loader2 size={14} className="inline animate-spin mr-1" /> Đang xử lý...</> : "Xác nhận"}
           </button>
         </div>
       </div>

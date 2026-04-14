@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { StatsData } from "@/lib/types";
-import { fmt, fmtDate, MENU, CAT_ICONS } from "@/lib/menu";
+import { fmt, fmtDate, MENU } from "@/lib/menu";
+import { ArrowLeft, ClipboardList, RotateCcw, Loader2, CategoryIcon } from "@/lib/icons";
 
 function pct(value: number, total: number) {
   if (total === 0) return 0;
@@ -157,13 +158,13 @@ export function StatsView({
     <div className="flex min-h-dvh flex-col bg-white">
       {/* Header */}
       <header className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3">
-        <button onClick={onBack} className="text-xl text-zinc-400 hover:text-zinc-600">←</button>
+        <button onClick={onBack} className="text-zinc-400 hover:text-zinc-600"><ArrowLeft size={18} /></button>
         <h1 className="flex-1 text-base font-semibold text-zinc-900">Thống kê</h1>
         <button
           onClick={onHistory}
           className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 hover:border-zinc-300 active:bg-zinc-50"
         >
-          📋 Lịch sử
+          <ClipboardList size={13} /> Lịch sử
         </button>
       </header>
 
@@ -229,16 +230,16 @@ export function StatsView({
       {/* Content */}
       {loading ? (
         <div className="flex flex-1 items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-600" />
+          <Loader2 size={20} className="animate-spin text-zinc-400" />
         </div>
       ) : error ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4">
           <p className="text-sm text-zinc-400">{error}</p>
           <button
             onClick={() => range === "custom" ? fetchStats("custom", customFrom, customTo) : fetchStats(range)}
-            className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-medium text-white"
+            className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-5 py-2 text-sm font-medium text-white"
           >
-            Thử lại
+            <RotateCcw size={13} /> Thử lại
           </button>
         </div>
       ) : data && data.summary.order_count === 0 ? (
@@ -337,8 +338,8 @@ export function StatsView({
                   {categoryData.map(cat => (
                     <div key={cat.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`h-2 w-2 rounded-full ${CAT_DOT[cat.name] || "bg-zinc-400"}`} />
-                        <span className="text-sm text-zinc-600">{CAT_ICONS[cat.name] || ""} {cat.name}</span>
+                        <CategoryIcon category={cat.name} size={14} className={`${CAT_DOT[cat.name] ? "text-zinc-500" : "text-zinc-400"}`} />
+                        <span className="text-sm text-zinc-600">{cat.name}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-zinc-400">{cat.qty} món · {pct(cat.revenue, Number(data.summary.revenue))}%</span>

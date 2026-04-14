@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Lock, Loader2 } from "@/lib/icons";
 
 type Props = {
   onSuccess: () => void;
@@ -45,6 +46,9 @@ export function PinModal({ onSuccess, onClose }: Props) {
         <div className="mb-4 flex justify-center lg:hidden">
           <div className="h-1 w-10 rounded-full bg-zinc-200" />
         </div>
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100">
+          <Lock size={18} className="text-zinc-500" />
+        </div>
         <h3 className="mb-0.5 text-lg font-semibold text-zinc-900">Nhập mã PIN</h3>
         <p className="mb-4 text-sm text-zinc-400">Chỉ chủ cửa hàng được xem thống kê</p>
         <input
@@ -81,7 +85,7 @@ export function PinModal({ onSuccess, onClose }: Props) {
             disabled={pinInput.length < 4 || loading}
             className="flex-1 rounded-xl bg-zinc-900 py-3.5 text-sm font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
-            {loading ? "Đang xác thực..." : "Xác nhận"}
+            {loading ? <><Loader2 size={14} className="animate-spin" /> Đang xác thực...</> : "Xác nhận"}
           </button>
         </div>
       </div>
