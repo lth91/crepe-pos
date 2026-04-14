@@ -2,6 +2,7 @@ import type { MenuItem, Extra } from "./types";
 
 export const MENU: Record<string, MenuItem[]> = {
   "Sweet Crepes": [
+    { name: "Plain Crepe", price: 40000 },
     { name: "Nutella", price: 50000 },
     { name: "Nutella Lover", price: 80000 },
     { name: "Nutella Chuối Xoài Dâu", price: 65000 },
@@ -55,13 +56,13 @@ export const MENU: Record<string, MenuItem[]> = {
     { name: "Beer", price: 25000 },
   ],
   Topping: [
-    { name: "Sốt Nutella", price: 5000 },
+    { name: "Sốt Nutella", price: 10000 },
     { name: "Sốt Sô-cô-la", price: 5000 },
     { name: "Xoài", price: 5000 },
     { name: "Chuối", price: 5000 },
     { name: "Dâu", price: 5000 },
     { name: "Sốt Caramel", price: 5000 },
-    { name: "Đường", price: 5000 },
+    { name: "Vụn Oreo", price: 5000 },
     { name: "Whipping Cream", price: 10000 },
     { name: "Phô Mai", price: 10000 },
     { name: "Xúc Xích", price: 10000 },
@@ -72,13 +73,13 @@ export const MENU: Record<string, MenuItem[]> = {
 };
 
 export const SWEET_EXTRAS: Extra[] = [
-  { name: "Nutella", price: 5000 },
+  { name: "Nutella", price: 10000 },
   { name: "Sô-cô-la", price: 5000 },
   { name: "Xoài", price: 5000 },
   { name: "Chuối", price: 5000 },
   { name: "Dâu", price: 5000 },
   { name: "Caramel", price: 5000 },
-  { name: "Đường", price: 5000 },
+  { name: "Vụn Oreo", price: 5000 },
   { name: "Whipping Cream", price: 10000 },
 ];
 
