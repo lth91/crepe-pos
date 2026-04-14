@@ -40,13 +40,13 @@ export function PinModal({ onSuccess, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 lg:items-center">
-      <div className="w-full max-w-sm rounded-t-3xl bg-white p-6 shadow-xl lg:rounded-2xl">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/20 backdrop-blur-[2px] lg:items-center">
+      <div className="w-full max-w-sm rounded-t-2xl bg-white p-5 shadow-xl lg:rounded-2xl">
         <div className="mb-4 flex justify-center lg:hidden">
-          <div className="h-1.5 w-12 rounded-full bg-gray-300" />
+          <div className="h-1 w-10 rounded-full bg-zinc-200" />
         </div>
-        <h3 className="mb-1 text-xl font-bold">Nhập mã PIN</h3>
-        <p className="mb-4 text-sm text-gray-500">Chỉ chủ cửa hàng được xem thống kê</p>
+        <h3 className="mb-0.5 text-lg font-semibold text-zinc-900">Nhập mã PIN</h3>
+        <p className="mb-4 text-sm text-zinc-400">Chỉ chủ cửa hàng được xem thống kê</p>
         <input
           type="password"
           inputMode="numeric"
@@ -59,8 +59,8 @@ export function PinModal({ onSuccess, onClose }: Props) {
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSubmit();
           }}
-          className={`mb-4 w-full rounded-xl border-2 px-4 py-3 text-center text-2xl font-semibold tracking-widest outline-none focus:border-amber-500 ${
-            pinError ? "border-red-400" : ""
+          className={`mb-4 w-full rounded-lg border px-4 py-3 text-center text-2xl font-semibold tracking-[0.3em] outline-none transition-colors focus:border-zinc-400 ${
+            pinError ? "border-red-300 bg-red-50" : "border-zinc-200"
           }`}
           placeholder="••••"
           autoFocus
@@ -68,18 +68,18 @@ export function PinModal({ onSuccess, onClose }: Props) {
         {pinError && (
           <p className="mb-3 text-center text-sm text-red-500">Mã PIN không đúng</p>
         )}
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 rounded-2xl bg-gray-100 py-4 text-base font-semibold text-gray-700 active:bg-gray-200 disabled:opacity-50"
+            className="flex-1 rounded-xl border border-zinc-200 py-3.5 text-sm font-medium text-zinc-600 active:bg-zinc-50 disabled:opacity-50"
           >
             Huỷ
           </button>
           <button
             onClick={handleSubmit}
             disabled={pinInput.length < 4 || loading}
-            className="flex-1 rounded-2xl bg-amber-600 py-4 text-base font-semibold text-white active:bg-amber-700 disabled:bg-gray-300 disabled:text-gray-500"
+            className="flex-1 rounded-xl bg-zinc-900 py-3.5 text-sm font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
             {loading ? "Đang xác thực..." : "Xác nhận"}
           </button>

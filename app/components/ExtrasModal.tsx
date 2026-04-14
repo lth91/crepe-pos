@@ -27,31 +27,31 @@ export function ExtrasModal({ item, availableExtras, onConfirm, onClose }: Props
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 lg:items-center">
-      <div className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-xl lg:rounded-2xl">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/20 backdrop-blur-[2px] lg:items-center">
+      <div className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl lg:rounded-2xl">
         <div className="mb-4 flex justify-center lg:hidden">
-          <div className="h-1.5 w-12 rounded-full bg-gray-300" />
+          <div className="h-1 w-10 rounded-full bg-zinc-200" />
         </div>
-        <h3 className="mb-1 text-xl font-bold">{item.name}</h3>
-        <p className="mb-4 text-sm text-gray-500">
+        <h3 className="mb-0.5 text-lg font-semibold text-zinc-900">{item.name}</h3>
+        <p className="mb-4 text-sm text-zinc-400">
           {fmt(item.price)} · Chọn thêm topping?
         </p>
 
-        <div className="mb-5 grid grid-cols-2 gap-2 max-h-[40dvh] overflow-y-auto">
+        <div className="mb-4 grid grid-cols-2 gap-1.5 max-h-[40dvh] overflow-y-auto">
           {availableExtras.map((extra) => {
             const selected = selectedExtras.some((e) => e.name === extra.name);
             return (
               <button
                 key={extra.name}
                 onClick={() => toggleExtra(extra)}
-                className={`flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-colors ${
+                className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-all ${
                   selected
-                    ? "bg-amber-600 text-white"
-                    : "bg-gray-100 text-gray-700 active:bg-gray-200"
+                    ? "bg-zinc-900 font-medium text-white"
+                    : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 active:bg-zinc-50"
                 }`}
               >
                 <span>{extra.name}</span>
-                <span className={selected ? "text-amber-200" : "text-gray-400"}>
+                <span className={selected ? "text-zinc-400" : "text-zinc-400"}>
                   +{fmt(extra.price)}
                 </span>
               </button>
@@ -60,24 +60,24 @@ export function ExtrasModal({ item, availableExtras, onConfirm, onClose }: Props
         </div>
 
         {selectedExtras.length > 0 && (
-          <div className="mb-4 rounded-xl bg-amber-50 p-3 text-sm">
-            <span className="text-gray-600">Tổng: </span>
-            <span className="font-bold text-amber-700">
+          <div className="mb-4 rounded-lg bg-zinc-50 p-3 text-sm">
+            <span className="text-zinc-500">Tổng: </span>
+            <span className="font-semibold text-zinc-900">
               {fmt(item.price + selectedExtras.reduce((s, e) => s + e.price, 0))}
             </span>
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 rounded-2xl bg-gray-100 py-4 text-base font-semibold text-gray-700 active:bg-gray-200"
+            className="flex-1 rounded-xl border border-zinc-200 py-3.5 text-sm font-medium text-zinc-600 active:bg-zinc-50"
           >
             Huỷ
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 rounded-2xl bg-amber-600 py-4 text-base font-semibold text-white active:bg-amber-700"
+            className="flex-1 rounded-xl bg-zinc-900 py-3.5 text-sm font-semibold text-white active:bg-zinc-800"
           >
             {selectedExtras.length > 0 ? "Thêm với topping" : "Thêm không topping"}
           </button>

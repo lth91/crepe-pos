@@ -30,36 +30,39 @@ export function CartSheet({
     <>
       {cartOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px] lg:hidden"
           onClick={() => setCartOpen(false)}
         />
       )}
 
       <div
-        className={`fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 lg:static lg:z-auto lg:max-h-none lg:w-96 lg:rounded-none lg:border-l lg:shadow-none ${
+        className={`fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-2xl bg-white shadow-xl transition-transform duration-300 lg:static lg:z-auto lg:max-h-none lg:w-96 lg:rounded-none lg:border-l lg:border-zinc-100 lg:shadow-none ${
           cartOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"
         }`}
       >
         <div className="flex justify-center pt-2 lg:hidden">
-          <div className="h-1.5 w-12 rounded-full bg-gray-300" />
+          <div className="h-1 w-10 rounded-full bg-zinc-200" />
         </div>
 
         <div className="flex items-center justify-between px-4 py-3">
-          <h2 className="text-lg font-bold">
-            Đơn hàng{" "}
+          <h2 className="text-base font-semibold text-zinc-900">
+            Đơn hàng
             {itemCount > 0 && (
-              <span className="text-sm font-normal text-gray-500">({itemCount} món)</span>
+              <span className="ml-1.5 text-sm font-normal text-zinc-400">({itemCount})</span>
             )}
           </h2>
           <div className="flex items-center gap-3">
             {cart.length > 0 && (
-              <button onClick={clearCart} className="text-sm text-red-500 active:text-red-700">
+              <button
+                onClick={clearCart}
+                className="text-xs font-medium text-red-500 hover:text-red-600"
+              >
                 Xoá hết
               </button>
             )}
             <button
               onClick={() => setCartOpen(false)}
-              className="text-2xl text-gray-400 lg:hidden"
+              className="text-xl text-zinc-300 hover:text-zinc-500 lg:hidden"
             >
               ✕
             </button>
@@ -68,38 +71,41 @@ export function CartSheet({
 
         <div className="flex-1 overflow-y-auto px-4 pb-2">
           {cart.length === 0 ? (
-            <p className="py-12 text-center text-gray-300">Chưa có món nào</p>
+            <p className="py-16 text-center text-sm text-zinc-300">Chưa có món nào</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {cart.map((item) => (
-                <div key={item.cartKey} className="flex items-center gap-3 rounded-xl bg-gray-50 p-3">
+                <div
+                  key={item.cartKey}
+                  className="flex items-center gap-3 rounded-lg border border-zinc-100 p-3"
+                >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-medium">{item.name}</p>
+                    <p className="truncate text-sm font-medium text-zinc-800">{item.name}</p>
                     {item.extras && item.extras.length > 0 && (
                       <p className="truncate text-xs text-amber-600">
                         + {item.extras.map((e) => e.name).join(", ")}
                       </p>
                     )}
-                    <p className="text-sm text-gray-500">{fmt(itemUnitPrice(item))}</p>
+                    <p className="text-xs text-zinc-400">{fmt(itemUnitPrice(item))}</p>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => updateQty(item.cartKey, -1)}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-200 text-xl font-bold active:bg-gray-300"
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-sm font-medium text-zinc-600 active:bg-zinc-100"
                     >
                       −
                     </button>
-                    <span className="w-8 text-center text-base font-semibold">{item.qty}</span>
+                    <span className="w-7 text-center text-sm font-semibold">{item.qty}</span>
                     <button
                       onClick={() => updateQty(item.cartKey, 1)}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-200 text-xl font-bold active:bg-gray-300"
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-sm font-medium text-zinc-600 active:bg-zinc-100"
                     >
                       +
                     </button>
                   </div>
                   <button
                     onClick={() => removeItem(item.cartKey)}
-                    className="p-1 text-lg text-gray-400 active:text-red-500"
+                    className="text-zinc-300 hover:text-red-500"
                   >
                     ✕
                   </button>
@@ -109,15 +115,15 @@ export function CartSheet({
           )}
         </div>
 
-        <div className="border-t px-4 py-4">
-          <div className="mb-3 flex justify-between text-xl font-bold">
-            <span>Tổng</span>
-            <span className="text-amber-700">{fmt(total)}</span>
+        <div className="border-t border-zinc-100 px-4 py-4">
+          <div className="mb-3 flex justify-between text-lg font-semibold">
+            <span className="text-zinc-500">Tổng</span>
+            <span className="text-zinc-900">{fmt(total)}</span>
           </div>
           <button
             onClick={openPayment}
             disabled={cart.length === 0}
-            className="w-full rounded-2xl bg-amber-600 py-4 text-lg font-semibold text-white active:bg-amber-700 disabled:bg-gray-300 disabled:text-gray-500"
+            className="w-full rounded-xl bg-zinc-900 py-3.5 text-sm font-semibold text-white transition-colors active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
             Thanh toán
           </button>

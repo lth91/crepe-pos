@@ -4,14 +4,13 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import type { StatsData } from "@/lib/types";
 import { fmt, fmtDate, MENU, CAT_ICONS } from "@/lib/menu";
 
-// ── Helpers ──────────────────────────────────────────────────────────
 function pct(value: number, total: number) {
   if (total === 0) return 0;
   return Math.round((value / total) * 100);
 }
 
 function changeLabel(current: number, previous: number) {
-  if (previous === 0) return current > 0 ? "+100%" : "0%";
+  if (previous === 0) return current > 0 ? "+100%" : "—";
   const diff = ((current - previous) / previous) * 100;
   const sign = diff >= 0 ? "+" : "";
   return `${sign}${Math.round(diff)}%`;
@@ -20,7 +19,7 @@ function changeLabel(current: number, previous: number) {
 function changeColor(current: number, previous: number) {
   if (current > previous) return "text-green-600";
   if (current < previous) return "text-red-500";
-  return "text-gray-400";
+  return "text-zinc-400";
 }
 
 function toDateStr(d: Date) {
@@ -29,12 +28,18 @@ function toDateStr(d: Date) {
 
 const ITEM_TO_CATEGORY = new Map<string, string>();
 for (const [cat, items] of Object.entries(MENU)) {
-  for (const item of items) {
-    ITEM_TO_CATEGORY.set(item.name, cat);
-  }
+  for (const item of items) ITEM_TO_CATEGORY.set(item.name, cat);
 }
 
 const CAT_COLORS: Record<string, string> = {
+  "Sweet Crepes": "bg-amber-400",
+  "Savory Crepes": "bg-orange-400",
+  "Ice Cream": "bg-cyan-400",
+  Drinks: "bg-blue-400",
+  Topping: "bg-yellow-400",
+};
+
+const CAT_DOT: Record<string, string> = {
   "Sweet Crepes": "bg-amber-500",
   "Savory Crepes": "bg-orange-500",
   "Ice Cream": "bg-cyan-500",
@@ -42,17 +47,8 @@ const CAT_COLORS: Record<string, string> = {
   Topping: "bg-yellow-500",
 };
 
-const CAT_TEXT_COLORS: Record<string, string> = {
-  "Sweet Crepes": "text-amber-700",
-  "Savory Crepes": "text-orange-700",
-  "Ice Cream": "text-cyan-700",
-  Drinks: "text-blue-700",
-  Topping: "text-yellow-700",
-};
-
 type RangeType = "today" | "yesterday" | "week" | "month" | "custom";
 
-// ── Component ────────────────────────────────────────────────────────
 export function StatsView({
   onBack,
   onHistory,
@@ -79,11 +75,8 @@ export function StatsView({
         }
         const res = await fetch(url);
         if (!res.ok) {
-          if (res.status === 401) {
-            onBack();
-            return;
-          }
-          throw new Error("Không thể tải dữ liệu thống kê");
+          if (res.status === 401) { onBack(); return; }
+          throw new Error("Không thể tải dữ liệu");
         }
         setData(await res.json());
       } catch (err) {
@@ -96,11 +89,8 @@ export function StatsView({
   );
 
   useEffect(() => {
-    if (range === "custom") {
-      fetchStats("custom", customFrom, customTo);
-    } else {
-      fetchStats(range);
-    }
+    if (range === "custom") fetchStats("custom", customFrom, customTo);
+    else fetchStats(range);
   }, [range, customFrom, customTo, fetchStats]);
 
   const categoryData = useMemo(() => {
@@ -119,7 +109,7 @@ export function StatsView({
       .sort((a, b) => b.revenue - a.revenue);
   }, [data]);
 
-  const rangeLabels: Record<RangeType, string> = {
+  const labels: Record<RangeType, string> = {
     today: "Hôm nay",
     yesterday: "Hôm qua",
     week: "Tuần này",
@@ -135,103 +125,68 @@ export function StatsView({
     custom: "kỳ trước",
   };
 
-  // Quick date shortcuts for custom mode
-  function setQuickRange(label: string) {
+  function setQuickRange(key: string) {
     const now = new Date();
     let from: Date;
-    const to = new Date();
-
-    switch (label) {
-      case "7d":
-        from = new Date(now);
-        from.setDate(now.getDate() - 6);
-        break;
-      case "14d":
-        from = new Date(now);
-        from.setDate(now.getDate() - 13);
-        break;
-      case "30d":
-        from = new Date(now);
-        from.setDate(now.getDate() - 29);
-        break;
-      case "90d":
-        from = new Date(now);
-        from.setDate(now.getDate() - 89);
-        break;
-      case "thisYear":
-        from = new Date(now.getFullYear(), 0, 1);
-        break;
-      default:
-        return;
+    switch (key) {
+      case "7d": from = new Date(now); from.setDate(now.getDate() - 6); break;
+      case "14d": from = new Date(now); from.setDate(now.getDate() - 13); break;
+      case "30d": from = new Date(now); from.setDate(now.getDate() - 29); break;
+      case "90d": from = new Date(now); from.setDate(now.getDate() - 89); break;
+      case "thisYear": from = new Date(now.getFullYear(), 0, 1); break;
+      default: return;
     }
     setCustomFrom(toDateStr(from));
-    setCustomTo(toDateStr(to));
+    setCustomTo(toDateStr(now));
     setRange("custom");
   }
 
-  // Format the custom range description
   const customRangeDesc = useMemo(() => {
     if (range !== "custom") return "";
     if (customFrom === customTo) {
       return new Date(customFrom).toLocaleDateString("vi-VN", {
-        weekday: "long",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
+        weekday: "long", day: "2-digit", month: "2-digit", year: "numeric",
       });
     }
-    const f = new Date(customFrom).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-    });
-    const t = new Date(customTo).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    const f = new Date(customFrom).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+    const t = new Date(customTo).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
     return `${f} — ${t}`;
   }, [range, customFrom, customTo]);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-gray-50">
+    <div className="flex min-h-dvh flex-col bg-white">
       {/* Header */}
-      <div className="bg-amber-700 px-4 pb-3 pt-3 text-white">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="text-2xl active:opacity-70">
-            ←
-          </button>
-          <h1 className="flex-1 text-lg font-bold">Thống kê doanh thu</h1>
-          <button
-            onClick={onHistory}
-            className="flex items-center gap-1.5 rounded-xl bg-amber-600/50 px-3 py-2 text-sm font-medium active:bg-amber-600"
-          >
-            📋 Lịch sử
-          </button>
-        </div>
-      </div>
+      <header className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3">
+        <button onClick={onBack} className="text-xl text-zinc-400 hover:text-zinc-600">←</button>
+        <h1 className="flex-1 text-base font-semibold text-zinc-900">Thống kê</h1>
+        <button
+          onClick={onHistory}
+          className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 hover:border-zinc-300 active:bg-zinc-50"
+        >
+          📋 Lịch sử
+        </button>
+      </header>
 
       {/* Range Tabs */}
-      <div className="bg-amber-700 px-3 pb-3">
-        <div className="flex gap-1.5">
+      <div className="border-b border-zinc-100 px-4 py-2.5">
+        <div className="flex gap-1">
           {(["today", "yesterday", "week", "month", "custom"] as const).map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all ${
+              className={`rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                 range === r
-                  ? "bg-white text-amber-700 shadow-md"
-                  : "bg-amber-600/50 text-amber-100 active:bg-amber-600"
+                  ? "bg-zinc-900 text-white"
+                  : "text-zinc-500 hover:bg-zinc-100"
               }`}
             >
-              {rangeLabels[r]}
+              {labels[r]}
             </button>
           ))}
         </div>
 
-        {/* Custom date picker */}
         {range === "custom" && (
-          <div className="mt-3 space-y-2">
-            {/* Quick shortcuts */}
+          <div className="mt-3 space-y-2.5 pb-1">
             <div className="flex flex-wrap gap-1.5">
               {[
                 { label: "7 ngày", key: "7d" },
@@ -243,37 +198,29 @@ export function StatsView({
                 <button
                   key={s.key}
                   onClick={() => setQuickRange(s.key)}
-                  className="rounded-lg bg-amber-600/50 px-3 py-1.5 text-xs font-medium text-amber-100 active:bg-amber-600"
+                  className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs text-zinc-500 hover:border-zinc-300 active:bg-zinc-50"
                 >
                   {s.label}
                 </button>
               ))}
             </div>
-
-            {/* Date inputs */}
             <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <label className="mb-1 block text-[10px] uppercase text-amber-300">Từ ngày</label>
-                <input
-                  type="date"
-                  value={customFrom}
-                  max={customTo}
-                  onChange={(e) => setCustomFrom(e.target.value)}
-                  className="w-full rounded-xl bg-amber-600/50 px-3 py-2.5 text-sm font-medium text-white outline-none focus:ring-2 focus:ring-amber-300 [color-scheme:dark]"
-                />
-              </div>
-              <span className="mt-4 text-amber-300">→</span>
-              <div className="flex-1">
-                <label className="mb-1 block text-[10px] uppercase text-amber-300">Đến ngày</label>
-                <input
-                  type="date"
-                  value={customTo}
-                  min={customFrom}
-                  max={toDateStr(new Date())}
-                  onChange={(e) => setCustomTo(e.target.value)}
-                  className="w-full rounded-xl bg-amber-600/50 px-3 py-2.5 text-sm font-medium text-white outline-none focus:ring-2 focus:ring-amber-300 [color-scheme:dark]"
-                />
-              </div>
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
+              />
+              <span className="text-zinc-300">→</span>
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom}
+                max={toDateStr(new Date())}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
+              />
             </div>
           </div>
         )}
@@ -282,133 +229,133 @@ export function StatsView({
       {/* Content */}
       {loading ? (
         <div className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-300 border-t-amber-700" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-600" />
         </div>
       ) : error ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4">
-          <p className="text-center text-gray-500">{error}</p>
+          <p className="text-sm text-zinc-400">{error}</p>
           <button
-            onClick={() =>
-              range === "custom"
-                ? fetchStats("custom", customFrom, customTo)
-                : fetchStats(range)
-            }
-            className="rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-semibold text-white active:bg-amber-700"
+            onClick={() => range === "custom" ? fetchStats("custom", customFrom, customTo) : fetchStats(range)}
+            className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-medium text-white"
           >
             Thử lại
           </button>
         </div>
       ) : data && data.summary.order_count === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8">
-          <span className="text-5xl">📊</span>
-          <p className="text-lg font-semibold text-gray-400">Chưa có đơn hàng nào</p>
-          <p className="text-sm text-gray-300">
-            {range === "custom" ? customRangeDesc : rangeLabels[range]}
-          </p>
+        <div className="flex flex-1 flex-col items-center justify-center gap-1 p-8">
+          <p className="text-sm text-zinc-300">Chưa có đơn hàng nào</p>
+          <p className="text-xs text-zinc-300">{range === "custom" ? customRangeDesc : labels[range]}</p>
         </div>
       ) : data ? (
-        <div className="flex-1 overflow-y-auto pb-8">
-          {/* ── Hero Revenue Card ─────────────────────────────────── */}
-          <div className="-mt-1 rounded-b-3xl bg-amber-700 px-4 pb-6 pt-2">
-            <div className="rounded-2xl bg-white/10 p-5 backdrop-blur-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-amber-200">Tổng doanh thu</p>
-                  <p className="mt-1 text-4xl font-extrabold text-white">
-                    {fmt(Number(data.summary.revenue))}
-                  </p>
-                </div>
-                {range === "custom" && (
-                  <p className="rounded-lg bg-white/10 px-2.5 py-1 text-xs text-amber-200">
-                    {customRangeDesc}
-                  </p>
-                )}
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <span
-                  className={`text-sm font-semibold ${
-                    Number(data.summary.revenue) >= Number(data.prevSummary.revenue)
-                      ? "text-green-300"
-                      : "text-red-300"
-                  }`}
-                >
-                  {changeLabel(
-                    Number(data.summary.revenue),
-                    Number(data.prevSummary.revenue)
-                  )}
-                </span>
-                <span className="text-xs text-amber-300">so với {prevLabels[range]}</span>
-              </div>
+        <div className="flex-1 overflow-y-auto">
+          {/* Revenue Hero */}
+          <div className="border-b border-zinc-100 px-4 py-5">
+            <p className="text-xs font-medium text-zinc-400">Doanh thu</p>
+            <p className="mt-1 text-3xl font-semibold text-zinc-900 tracking-tight">
+              {fmt(Number(data.summary.revenue))}
+            </p>
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <span className={`text-xs font-semibold ${
+                Number(data.summary.revenue) >= Number(data.prevSummary.revenue)
+                  ? "text-green-600" : "text-red-500"
+              }`}>
+                {changeLabel(Number(data.summary.revenue), Number(data.prevSummary.revenue))}
+              </span>
+              <span className="text-xs text-zinc-400">so với {prevLabels[range]}</span>
             </div>
+            {range === "custom" && (
+              <p className="mt-1 text-xs text-zinc-400">{customRangeDesc}</p>
+            )}
           </div>
 
-          <div className="space-y-4 p-4">
-            {/* ── KPI Cards ──────────────────────────────────────── */}
-            <div className="grid grid-cols-3 gap-3">
-              <KPICard
-                label="Số đơn"
-                value={String(data.summary.order_count)}
-                sub={changeLabel(data.summary.order_count, data.prevSummary.order_count)}
-                subColor={changeColor(data.summary.order_count, data.prevSummary.order_count)}
-              />
-              <KPICard label="TB/đơn" value={fmt(data.summary.avg_order)} />
-              <KPICard label="Cao nhất" value={fmt(data.summary.max_order)} />
+          <div className="space-y-0 divide-y divide-zinc-100">
+            {/* KPIs */}
+            <div className="grid grid-cols-3 divide-x divide-zinc-100">
+              <div className="px-4 py-4">
+                <p className="text-xs text-zinc-400">Số đơn</p>
+                <p className="mt-0.5 text-xl font-semibold text-zinc-800">{data.summary.order_count}</p>
+                <p className={`text-xs font-medium ${changeColor(data.summary.order_count, data.prevSummary.order_count)}`}>
+                  {changeLabel(data.summary.order_count, data.prevSummary.order_count)}
+                </p>
+              </div>
+              <div className="px-4 py-4">
+                <p className="text-xs text-zinc-400">TB/đơn</p>
+                <p className="mt-0.5 text-xl font-semibold text-zinc-800">{fmt(data.summary.avg_order)}</p>
+              </div>
+              <div className="px-4 py-4">
+                <p className="text-xs text-zinc-400">Cao nhất</p>
+                <p className="mt-0.5 text-xl font-semibold text-zinc-800">{fmt(data.summary.max_order)}</p>
+              </div>
             </div>
 
-            {/* ── Payment Breakdown ──────────────────────────────── */}
-            <Section title="Phương thức thanh toán">
-              <PaymentBar data={data} />
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <PaymentCard
-                  label="Tiền mặt"
-                  amount={Number(data.summary.cash_revenue)}
-                  count={data.paymentCounts.find((p) => p.method === "cash")?.count || 0}
-                  color="bg-green-500"
-                  textColor="text-green-700"
-                />
-                <PaymentCard
-                  label="Chuyển khoản"
-                  amount={Number(data.summary.transfer_revenue)}
-                  count={data.paymentCounts.find((p) => p.method === "transfer")?.count || 0}
-                  color="bg-blue-500"
-                  textColor="text-blue-700"
-                />
-                <PaymentCard
-                  label="Thẻ"
-                  amount={Number(data.summary.card_revenue)}
-                  count={data.paymentCounts.find((p) => p.method === "card")?.count || 0}
-                  color="bg-purple-500"
-                  textColor="text-purple-700"
-                />
+            {/* Payment */}
+            <div className="px-4 py-4">
+              <SectionLabel>Thanh toán</SectionLabel>
+              <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-zinc-100">
+                {Number(data.summary.revenue) > 0 && (
+                  <>
+                    <div className="bg-emerald-400 transition-all" style={{ width: `${pct(Number(data.summary.cash_revenue), Number(data.summary.revenue))}%` }} />
+                    <div className="bg-blue-400 transition-all" style={{ width: `${pct(Number(data.summary.transfer_revenue), Number(data.summary.revenue))}%` }} />
+                    <div className="bg-violet-400 transition-all" style={{ width: `${pct(Number(data.summary.card_revenue), Number(data.summary.revenue))}%` }} />
+                  </>
+                )}
               </div>
-            </Section>
+              <div className="mt-3 grid grid-cols-3 gap-3">
+                <PayItem label="Tiền mặt" amount={Number(data.summary.cash_revenue)} count={data.paymentCounts.find(p => p.method === "cash")?.count || 0} dot="bg-emerald-400" />
+                <PayItem label="Chuyển khoản" amount={Number(data.summary.transfer_revenue)} count={data.paymentCounts.find(p => p.method === "transfer")?.count || 0} dot="bg-blue-400" />
+                <PayItem label="Thẻ" amount={Number(data.summary.card_revenue)} count={data.paymentCounts.find(p => p.method === "card")?.count || 0} dot="bg-violet-400" />
+              </div>
+            </div>
 
-            {/* ── Hourly Chart ───────────────────────────────────── */}
+            {/* Hourly */}
             {data.hourly.length > 0 && (
-              <Section title="Doanh thu theo giờ">
+              <div className="px-4 py-4">
+                <SectionLabel>Theo giờ</SectionLabel>
                 <HourlyChart hourly={data.hourly} />
-              </Section>
+              </div>
             )}
 
-            {/* ── Daily Chart ────────────────────────────────────── */}
+            {/* Daily */}
             {data.daily.length > 0 && (
-              <Section title="Doanh thu theo ngày">
+              <div className="px-4 py-4">
+                <SectionLabel>Theo ngày</SectionLabel>
                 <DailyChart daily={data.daily} />
-              </Section>
+              </div>
             )}
 
-            {/* ── Category Breakdown ─────────────────────────────── */}
+            {/* Categories */}
             {categoryData.length > 0 && (
-              <Section title="Doanh thu theo danh mục">
-                <CategoryChart categories={categoryData} total={Number(data.summary.revenue)} />
-              </Section>
+              <div className="px-4 py-4">
+                <SectionLabel>Danh mục</SectionLabel>
+                <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-zinc-100">
+                  {categoryData.map(cat => {
+                    const w = pct(cat.revenue, Number(data.summary.revenue));
+                    return w > 0 ? <div key={cat.name} className={`${CAT_COLORS[cat.name] || "bg-zinc-300"} transition-all`} style={{ width: `${w}%` }} /> : null;
+                  })}
+                </div>
+                <div className="mt-3 space-y-2">
+                  {categoryData.map(cat => (
+                    <div key={cat.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full ${CAT_DOT[cat.name] || "bg-zinc-400"}`} />
+                        <span className="text-sm text-zinc-600">{CAT_ICONS[cat.name] || ""} {cat.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-zinc-400">{cat.qty} món · {pct(cat.revenue, Number(data.summary.revenue))}%</span>
+                        <span className="text-sm font-medium text-zinc-800">{fmt(cat.revenue)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
-            {/* ── Top Items ──────────────────────────────────────── */}
+            {/* Top Items */}
             {data.topItems.length > 0 && (
-              <Section title="Món bán chạy nhất">
-                <TopItemsList items={data.topItems} />
-              </Section>
+              <div className="px-4 py-4 pb-8">
+                <SectionLabel>Bán chạy</SectionLabel>
+                <TopItems items={data.topItems} />
+              </div>
             )}
           </div>
         </div>
@@ -417,132 +364,55 @@ export function StatsView({
   );
 }
 
-// ── Sub Components ───────────────────────────────────────────────────
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm">
-      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-400">{title}</h3>
-      {children}
-    </div>
-  );
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">{children}</p>;
 }
 
-function KPICard({
-  label,
-  value,
-  sub,
-  subColor,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  subColor?: string;
-}) {
+function PayItem({ label, amount, count, dot }: { label: string; amount: number; count: number; dot: string }) {
   return (
-    <div className="rounded-xl bg-white p-3 shadow-sm">
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className="mt-0.5 text-lg font-bold text-gray-800">{value}</p>
-      {sub && (
-        <p className={`mt-0.5 text-xs font-semibold ${subColor || "text-gray-400"}`}>{sub}</p>
-      )}
-    </div>
-  );
-}
-
-function PaymentBar({ data }: { data: StatsData }) {
-  const total = Number(data.summary.revenue);
-  if (total === 0) return null;
-  const cash = pct(Number(data.summary.cash_revenue), total);
-  const transfer = pct(Number(data.summary.transfer_revenue), total);
-  const card = 100 - cash - transfer;
-
-  return (
-    <div className="flex h-4 overflow-hidden rounded-full bg-gray-100">
-      {cash > 0 && (
-        <div className="bg-green-500 transition-all duration-500" style={{ width: `${cash}%` }} />
-      )}
-      {transfer > 0 && (
-        <div
-          className="bg-blue-500 transition-all duration-500"
-          style={{ width: `${transfer}%` }}
-        />
-      )}
-      {card > 0 && (
-        <div
-          className="bg-purple-500 transition-all duration-500"
-          style={{ width: `${card}%` }}
-        />
-      )}
-    </div>
-  );
-}
-
-function PaymentCard({
-  label,
-  amount,
-  count,
-  color,
-  textColor,
-}: {
-  label: string;
-  amount: number;
-  count: number;
-  color: string;
-  textColor: string;
-}) {
-  return (
-    <div className="rounded-xl bg-gray-50 p-2.5">
+    <div>
       <div className="flex items-center gap-1.5">
-        <div className={`h-2.5 w-2.5 rounded-full ${color}`} />
-        <span className="text-xs text-gray-500">{label}</span>
+        <div className={`h-2 w-2 rounded-full ${dot}`} />
+        <span className="text-xs text-zinc-400">{label}</span>
       </div>
-      <p className={`mt-1 text-sm font-bold ${textColor}`}>{fmt(amount)}</p>
-      <p className="text-xs text-gray-400">{count} đơn</p>
+      <p className="mt-0.5 text-sm font-semibold text-zinc-800">{fmt(amount)}</p>
+      <p className="text-[11px] text-zinc-400">{count} đơn</p>
     </div>
   );
 }
 
 function HourlyChart({ hourly }: { hourly: StatsData["hourly"] }) {
-  const maxRevenue = Math.max(...hourly.map((h) => Number(h.revenue)), 1);
+  const maxRev = Math.max(...hourly.map(h => Number(h.revenue)), 1);
   const hours = Array.from({ length: 24 }, (_, i) => {
-    const found = hourly.find((h) => h.hour === i);
-    return {
-      hour: i,
-      revenue: found ? Number(found.revenue) : 0,
-      orders: found ? found.order_count : 0,
-    };
-  });
-  const visibleHours = hours.filter((h) => h.hour >= 7 && h.hour <= 23);
+    const found = hourly.find(h => h.hour === i);
+    return { hour: i, revenue: found ? Number(found.revenue) : 0, orders: found ? found.order_count : 0 };
+  }).filter(h => h.hour >= 7 && h.hour <= 23);
 
   return (
-    <div>
-      <div className="flex items-end gap-1" style={{ height: 120 }}>
-        {visibleHours.map((h) => {
-          const height = maxRevenue > 0 ? (h.revenue / maxRevenue) * 100 : 0;
-          const isActive = h.revenue > 0;
+    <div className="mt-3">
+      <div className="flex items-end gap-[3px]" style={{ height: 100 }}>
+        {hours.map(h => {
+          const height = maxRev > 0 ? (h.revenue / maxRev) * 100 : 0;
           return (
             <div key={h.hour} className="group relative flex flex-1 flex-col items-center">
               <div
-                className={`w-full rounded-t-sm transition-all duration-300 ${
-                  isActive ? "bg-amber-500 group-hover:bg-amber-600" : "bg-gray-100"
-                }`}
+                className={`w-full rounded-sm transition-all ${h.revenue > 0 ? "bg-zinc-800 group-hover:bg-zinc-600" : "bg-zinc-100"}`}
                 style={{ height: `${Math.max(height, 2)}%` }}
               />
-              {isActive && (
-                <div className="pointer-events-none absolute -top-14 z-10 hidden rounded-lg bg-gray-800 px-2 py-1 text-xs text-white shadow-lg group-hover:block">
-                  <p className="font-semibold">{fmt(h.revenue)}</p>
-                  <p className="text-gray-300">{h.orders} đơn</p>
+              {h.revenue > 0 && (
+                <div className="pointer-events-none absolute -top-12 z-10 hidden rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white shadow group-hover:block">
+                  <p className="font-medium">{fmt(h.revenue)}</p>
+                  <p className="text-zinc-400">{h.orders} đơn</p>
                 </div>
               )}
             </div>
           );
         })}
       </div>
-      <div className="mt-1 flex gap-1">
-        {visibleHours.map((h) => (
-          <div key={h.hour} className="flex-1 text-center text-[10px] text-gray-400">
-            {h.hour % 2 === 0 ? `${h.hour}h` : ""}
+      <div className="mt-1 flex gap-[3px]">
+        {hours.map(h => (
+          <div key={h.hour} className="flex-1 text-center text-[9px] text-zinc-400">
+            {h.hour % 3 === 0 ? `${h.hour}` : ""}
           </div>
         ))}
       </div>
@@ -551,36 +421,27 @@ function HourlyChart({ hourly }: { hourly: StatsData["hourly"] }) {
 }
 
 function DailyChart({ daily }: { daily: StatsData["daily"] }) {
-  const maxRevenue = Math.max(...daily.map((d) => Number(d.revenue)), 1);
-
+  const maxRev = Math.max(...daily.map(d => Number(d.revenue)), 1);
   return (
-    <div className="space-y-2">
-      {daily.map((d) => {
-        const width = pct(Number(d.revenue), maxRevenue);
+    <div className="mt-2 space-y-1.5">
+      {daily.map(d => {
+        const w = pct(Number(d.revenue), maxRev);
         return (
-          <div key={d.date} className="flex items-center gap-3">
-            <span className="w-16 shrink-0 text-xs text-gray-500">{fmtDate(d.date)}</span>
+          <div key={d.date} className="flex items-center gap-2.5">
+            <span className="w-14 shrink-0 text-xs text-zinc-400">{fmtDate(d.date)}</span>
             <div className="flex-1">
-              <div className="h-6 overflow-hidden rounded-lg bg-gray-100">
+              <div className="h-5 overflow-hidden rounded bg-zinc-100">
                 <div
-                  className="flex h-full items-center rounded-lg bg-amber-500 px-2 transition-all duration-500"
-                  style={{ width: `${Math.max(width, 8)}%` }}
+                  className="flex h-full items-center rounded bg-zinc-800 px-2 transition-all"
+                  style={{ width: `${Math.max(w, 6)}%` }}
                 >
-                  {width > 30 && (
-                    <span className="text-xs font-semibold text-white">
-                      {fmt(Number(d.revenue))}
-                    </span>
-                  )}
+                  {w > 35 && <span className="text-[10px] font-medium text-white">{fmt(Number(d.revenue))}</span>}
                 </div>
               </div>
             </div>
-            <div className="w-20 shrink-0 text-right">
-              {width <= 30 && (
-                <span className="text-xs font-semibold text-gray-700">
-                  {fmt(Number(d.revenue))}
-                </span>
-              )}
-              <p className="text-[10px] text-gray-400">{d.order_count} đơn</p>
+            <div className="w-18 shrink-0 text-right">
+              {w <= 35 && <span className="text-xs font-medium text-zinc-700">{fmt(Number(d.revenue))}</span>}
+              <p className="text-[10px] text-zinc-400">{d.order_count} đơn</p>
             </div>
           </div>
         );
@@ -589,93 +450,32 @@ function DailyChart({ daily }: { daily: StatsData["daily"] }) {
   );
 }
 
-function CategoryChart({
-  categories,
-  total,
-}: {
-  categories: { name: string; qty: number; revenue: number }[];
-  total: number;
-}) {
+function TopItems({ items }: { items: StatsData["topItems"] }) {
+  const maxQty = Math.max(...items.map(i => i.qty), 1);
   return (
-    <div className="space-y-3">
-      <div className="flex h-5 overflow-hidden rounded-full bg-gray-100">
-        {categories.map((cat) => {
-          const w = pct(cat.revenue, total);
-          if (w === 0) return null;
-          return (
-            <div
-              key={cat.name}
-              className={`${CAT_COLORS[cat.name] || "bg-gray-400"} transition-all duration-500`}
-              style={{ width: `${w}%` }}
-            />
-          );
-        })}
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        {categories.map((cat) => {
-          const percentage = pct(cat.revenue, total);
-          return (
-            <div key={cat.name} className="flex items-start gap-2 rounded-xl bg-gray-50 p-3">
-              <div
-                className={`mt-0.5 h-3 w-3 shrink-0 rounded-full ${CAT_COLORS[cat.name] || "bg-gray-400"}`}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-gray-600">
-                  {CAT_ICONS[cat.name] || ""} {cat.name}
-                </p>
-                <p
-                  className={`text-sm font-bold ${CAT_TEXT_COLORS[cat.name] || "text-gray-700"}`}
-                >
-                  {fmt(cat.revenue)}
-                </p>
-                <p className="text-[10px] text-gray-400">
-                  {cat.qty} món · {percentage}%
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TopItemsList({ items }: { items: StatsData["topItems"] }) {
-  const maxQty = Math.max(...items.map((i) => i.qty), 1);
-
-  return (
-    <div className="space-y-2">
+    <div className="mt-2 space-y-2">
       {items.map((item, i) => {
-        const barWidth = pct(item.qty, maxQty);
+        const w = pct(item.qty, maxQty);
         const cat = ITEM_TO_CATEGORY.get(item.name);
-        const barColor = cat ? CAT_COLORS[cat] || "bg-amber-500" : "bg-amber-500";
-
         return (
-          <div key={item.name} className="flex items-center gap-2.5">
-            <span
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                i < 3 ? "bg-amber-600 text-white" : "bg-gray-100 text-gray-500"
-              }`}
-            >
+          <div key={item.name} className="flex items-center gap-2">
+            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-semibold ${
+              i < 3 ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-500"
+            }`}>
               {i + 1}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
-                <span className="truncate text-sm font-medium text-gray-700">{item.name}</span>
-                <span className="ml-2 shrink-0 text-xs font-semibold text-amber-700">
-                  {fmt(Number(item.revenue))}
-                </span>
+                <span className="truncate text-sm text-zinc-700">{item.name}</span>
+                <span className="ml-2 shrink-0 text-xs font-medium text-zinc-800">{fmt(Number(item.revenue))}</span>
               </div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-gray-100">
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-zinc-100">
                 <div
-                  className={`h-full rounded-full ${barColor} transition-all duration-500`}
-                  style={{ width: `${Math.max(barWidth, 4)}%` }}
+                  className={`h-full rounded-full transition-all ${cat ? CAT_COLORS[cat] || "bg-zinc-400" : "bg-zinc-400"}`}
+                  style={{ width: `${Math.max(w, 3)}%` }}
                 />
               </div>
-              <p className="mt-0.5 text-[10px] text-gray-400">
-                x{item.qty} · {cat || ""}
-              </p>
+              <p className="mt-0.5 text-[10px] text-zinc-400">x{item.qty}{cat ? ` · ${cat}` : ""}</p>
             </div>
           </div>
         );

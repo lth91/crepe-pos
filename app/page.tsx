@@ -25,14 +25,10 @@ export default function POS() {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-
-  // Extras modal
   const [extrasModal, setExtrasModal] = useState<{
     item: MenuItem;
     availableExtras: Extra[];
   } | null>(null);
-
-  // Payment flow
   const [showPayment, setShowPayment] = useState(false);
   const [receipt, setReceipt] = useState<{
     items: CartItem[];
@@ -40,17 +36,13 @@ export default function POS() {
     method: PayMethod;
     cashGiven?: number;
   } | null>(null);
-
-  // Owner PIN
   const [pinModal, setPinModal] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
 
-  // DB setup on first load
   useEffect(() => {
     fetch("/api/setup").catch(() => {});
   }, []);
 
-  // Derived
   const total = useMemo(() => cart.reduce((s, i) => s + itemTotal(i), 0), [cart]);
   const itemCount = useMemo(() => cart.reduce((s, i) => s + i.qty, 0), [cart]);
 
@@ -128,39 +120,37 @@ export default function POS() {
     setCategory(CATEGORIES[0]);
   }
 
-  // ── Sub-views ──────────────────────────────────────────────────────
   if (view === "stats") {
-    return <StatsView onBack={() => setView("pos")} onHistory={() => setView("history")} />;
+    return (
+      <StatsView onBack={() => setView("pos")} onHistory={() => setView("history")} />
+    );
   }
-
   if (view === "history") {
     return <HistoryView onBack={() => setView("pos")} />;
   }
-
   if (receipt) {
     return <ReceiptView {...receipt} onNewOrder={newOrder} />;
   }
 
-  // ── Main POS Layout ────────────────────────────────────────────────
   return (
-    <div className="flex h-dvh flex-col bg-amber-50 text-gray-800 lg:flex-row">
+    <div className="flex h-dvh flex-col bg-white text-zinc-800 lg:flex-row">
       {/* Menu Area */}
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 bg-amber-700 px-4 py-3 text-white">
-          <h1 className="text-lg font-bold tracking-wide">Crepe House</h1>
+        <header className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3">
+          <h1 className="text-lg font-semibold text-zinc-900">Crepe House</h1>
           <div className="relative ml-auto flex-1 max-w-xs">
             <input
               type="text"
               placeholder="Tìm món..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl bg-amber-600 px-4 py-2.5 text-base text-white placeholder-amber-200 outline-none focus:ring-2 focus:ring-amber-300"
+              className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3.5 py-2 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-amber-200 active:text-white"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
               >
                 ✕
               </button>
@@ -168,40 +158,37 @@ export default function POS() {
           </div>
           <button
             onClick={() => setView("history")}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-600 text-xl active:bg-amber-800"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-zinc-500 transition-colors hover:bg-zinc-100 active:bg-zinc-200"
             title="Lịch sử"
           >
             📋
           </button>
           <button
             onClick={() => {
-              if (isOwner) {
-                setView("stats");
-              } else {
-                setPinModal(true);
-              }
+              if (isOwner) setView("stats");
+              else setPinModal(true);
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-600 text-xl active:bg-amber-800"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-zinc-500 transition-colors hover:bg-zinc-100 active:bg-zinc-200"
             title="Thống kê"
           >
             📊
           </button>
-        </div>
+        </header>
 
         {/* Category Tabs */}
         {!search && (
-          <div className="flex gap-2 overflow-x-auto bg-amber-100 px-3 py-2.5 scrollbar-hide">
+          <div className="flex gap-1 overflow-x-auto border-b border-zinc-100 px-4 py-2 scrollbar-hide">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
+                className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   category === cat
-                    ? "bg-amber-700 text-white shadow-sm"
-                    : "bg-white/60 text-amber-800 active:bg-amber-200"
+                    ? "bg-zinc-900 text-white"
+                    : "text-zinc-500 hover:bg-zinc-100 active:bg-zinc-200"
                 }`}
               >
-                <span>{CAT_ICONS[cat]}</span>
+                <span className="text-sm">{CAT_ICONS[cat]}</span>
                 <span>{cat}</span>
               </button>
             ))}
@@ -209,11 +196,11 @@ export default function POS() {
         )}
 
         {/* Menu Grid */}
-        <div className="flex-1 overflow-y-auto p-3 pb-24 lg:pb-3">
+        <div className="flex-1 overflow-y-auto p-4 pb-24 lg:pb-4">
           {search && displayedItems.length === 0 && (
-            <p className="mt-12 text-center text-gray-400">Không tìm thấy món nào</p>
+            <p className="mt-16 text-center text-sm text-zinc-400">Không tìm thấy món nào</p>
           )}
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
             {displayedItems.map((item) => {
               const inCartCount = cart
                 .filter((c) => c.name === item.name)
@@ -222,19 +209,21 @@ export default function POS() {
                 <button
                   key={item.name}
                   onClick={() => handleItemTap(item)}
-                  className={`relative flex flex-col items-start rounded-2xl p-4 shadow-sm transition-all active:scale-[0.97] ${
+                  className={`relative flex flex-col items-start rounded-xl border p-3.5 text-left transition-all active:scale-[0.98] ${
                     inCartCount > 0
-                      ? "bg-amber-50 ring-2 ring-amber-400"
-                      : "bg-white active:bg-gray-50"
+                      ? "border-amber-300 bg-amber-50/50"
+                      : "border-zinc-150 bg-white hover:border-zinc-300"
                   }`}
                 >
                   {inCartCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white shadow">
+                    <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-[11px] font-semibold text-white">
                       {inCartCount}
                     </span>
                   )}
-                  <span className="text-[15px] font-medium leading-tight">{item.name}</span>
-                  <span className="mt-auto pt-2 text-base font-bold text-amber-700">
+                  <span className="text-sm font-medium leading-snug text-zinc-800">
+                    {item.name}
+                  </span>
+                  <span className="mt-auto pt-2 text-sm font-semibold text-amber-700">
                     {fmt(item.price)}
                   </span>
                 </button>
@@ -248,19 +237,18 @@ export default function POS() {
       {cart.length > 0 && !cartOpen && (
         <button
           onClick={() => setCartOpen(true)}
-          className="fixed bottom-5 left-4 right-4 z-30 flex items-center justify-between rounded-2xl bg-amber-700 px-5 py-4 text-white shadow-xl active:bg-amber-800 lg:hidden"
+          className="fixed bottom-4 left-4 right-4 z-30 flex items-center justify-between rounded-xl bg-zinc-900 px-4 py-3.5 text-white shadow-lg active:bg-zinc-800 lg:hidden"
         >
-          <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/15 text-xs font-semibold">
               {itemCount}
             </span>
-            <span className="text-base font-semibold">Xem đơn hàng</span>
+            <span className="text-sm font-medium">Xem đơn hàng</span>
           </div>
-          <span className="text-lg font-bold">{fmt(total)}</span>
+          <span className="text-sm font-semibold">{fmt(total)}</span>
         </button>
       )}
 
-      {/* Cart */}
       <CartSheet
         cart={cart}
         cartOpen={cartOpen}
@@ -273,7 +261,6 @@ export default function POS() {
         openPayment={openPayment}
       />
 
-      {/* Extras Modal */}
       {extrasModal && (
         <ExtrasModal
           item={extrasModal.item}
@@ -286,7 +273,6 @@ export default function POS() {
         />
       )}
 
-      {/* Payment Modal */}
       {showPayment && (
         <PaymentModal
           cart={cart}
@@ -296,7 +282,6 @@ export default function POS() {
         />
       )}
 
-      {/* PIN Modal */}
       {pinModal && (
         <PinModal
           onSuccess={() => {
