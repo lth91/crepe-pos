@@ -1,13 +1,35 @@
 import { cookies } from "next/headers";
 import { getDb } from "@/lib/db";
 
-function dateRange(range: string, now: Date) {
+function dateRange(range: string, now: Date, customFrom?: string, customTo?: string) {
   let start: string;
   let end: string;
   let prevStart: string;
   let prevEnd: string;
 
-  if (range === "week") {
+  if (range === "custom" && customFrom) {
+    const from = new Date(customFrom);
+    from.setHours(0, 0, 0, 0);
+    start = from.toISOString();
+
+    if (customTo) {
+      const to = new Date(customTo);
+      to.setHours(23, 59, 59, 999);
+      end = to.toISOString();
+    } else {
+      // Single day
+      const to = new Date(from);
+      to.setDate(from.getDate() + 1);
+      end = to.toISOString();
+    }
+
+    // Previous period = same duration before start
+    const durationMs = new Date(end).getTime() - new Date(start).getTime();
+    const prevEndDate = new Date(start);
+    const prevStartDate = new Date(prevEndDate.getTime() - durationMs);
+    prevStart = prevStartDate.toISOString();
+    prevEnd = prevEndDate.toISOString();
+  } else if (range === "week") {
     const day = now.getDay();
     const mon = new Date(now);
     mon.setDate(now.getDate() - ((day + 6) % 7));
@@ -16,7 +38,6 @@ function dateRange(range: string, now: Date) {
     sun.setDate(mon.getDate() + 7);
     start = mon.toISOString();
     end = sun.toISOString();
-    // Previous week
     const prevMon = new Date(mon);
     prevMon.setDate(mon.getDate() - 7);
     prevStart = prevMon.toISOString();
@@ -26,7 +47,6 @@ function dateRange(range: string, now: Date) {
     const last = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     start = first.toISOString();
     end = last.toISOString();
-    // Previous month
     const prevFirst = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     prevStart = prevFirst.toISOString();
     prevEnd = start;
@@ -38,7 +58,6 @@ function dateRange(range: string, now: Date) {
     tomorrow.setDate(today.getDate() + 1);
     start = today.toISOString();
     end = tomorrow.toISOString();
-    // Yesterday
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     prevStart = yesterday.toISOString();
@@ -57,14 +76,14 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const range = searchParams.get("range") || "today";
+  const customFrom = searchParams.get("from") || undefined;
+  const customTo = searchParams.get("to") || undefined;
   const sql = getDb();
   const now = new Date();
-  const { start, end, prevStart, prevEnd } = dateRange(range, now);
+  const { start, end, prevStart, prevEnd } = dateRange(range, now, customFrom, customTo);
 
-  // Run all queries in parallel
   const [summary, prevSummary, daily, hourly, topItems, categoryBreakdown, paymentCounts] =
     await Promise.all([
-      // Current period summary
       sql`
         SELECT
           COUNT(*)::int AS order_count,
@@ -78,7 +97,6 @@ export async function GET(req: Request) {
         FROM orders
         WHERE created_at >= ${start} AND created_at < ${end}
       `,
-      // Previous period summary (for comparison)
       sql`
         SELECT
           COUNT(*)::int AS order_count,
@@ -86,7 +104,6 @@ export async function GET(req: Request) {
         FROM orders
         WHERE created_at >= ${prevStart} AND created_at < ${prevEnd}
       `,
-      // Daily breakdown
       sql`
         SELECT
           created_at::date AS date,
@@ -96,9 +113,8 @@ export async function GET(req: Request) {
         WHERE created_at >= ${start} AND created_at < ${end}
         GROUP BY created_at::date
         ORDER BY date ASC
-        LIMIT 31
+        LIMIT 90
       `,
-      // Hourly breakdown
       sql`
         SELECT
           EXTRACT(HOUR FROM created_at)::int AS hour,
@@ -109,7 +125,6 @@ export async function GET(req: Request) {
         GROUP BY EXTRACT(HOUR FROM created_at)
         ORDER BY hour
       `,
-      // Top items (expanded to 15)
       sql`
         SELECT
           item->>'name' AS name,
@@ -121,7 +136,6 @@ export async function GET(req: Request) {
         ORDER BY qty DESC
         LIMIT 15
       `,
-      // Category breakdown (based on item prices mapped to categories)
       sql`
         SELECT
           item->>'name' AS name,
@@ -133,7 +147,6 @@ export async function GET(req: Request) {
         WHERE created_at >= ${start} AND created_at < ${end}
         GROUP BY item->>'name'
       `,
-      // Payment method counts
       sql`
         SELECT
           method,

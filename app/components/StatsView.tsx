@@ -23,7 +23,10 @@ function changeColor(current: number, previous: number) {
   return "text-gray-400";
 }
 
-// Map item name → category
+function toDateStr(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
 const ITEM_TO_CATEGORY = new Map<string, string>();
 for (const [cat, items] of Object.entries(MENU)) {
   for (const item of items) {
@@ -47,19 +50,34 @@ const CAT_TEXT_COLORS: Record<string, string> = {
   Topping: "text-yellow-700",
 };
 
+type RangeType = "today" | "week" | "month" | "custom";
+
 // ── Component ────────────────────────────────────────────────────────
-export function StatsView({ onBack }: { onBack: () => void }) {
-  const [range, setRange] = useState<"today" | "week" | "month">("today");
+export function StatsView({
+  onBack,
+  onHistory,
+}: {
+  onBack: () => void;
+  onHistory: () => void;
+}) {
+  const [range, setRange] = useState<RangeType>("today");
+  const [customFrom, setCustomFrom] = useState(toDateStr(new Date()));
+  const [customTo, setCustomTo] = useState(toDateStr(new Date()));
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(
-    async (r: string) => {
+    async (r: RangeType, from?: string, to?: string) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/stats?range=${r}`);
+        let url = `/api/stats?range=${r}`;
+        if (r === "custom" && from) {
+          url += `&from=${from}`;
+          if (to) url += `&to=${to}`;
+        }
+        const res = await fetch(url);
         if (!res.ok) {
           if (res.status === 401) {
             onBack();
@@ -78,10 +96,13 @@ export function StatsView({ onBack }: { onBack: () => void }) {
   );
 
   useEffect(() => {
-    fetchStats(range);
-  }, [range, fetchStats]);
+    if (range === "custom") {
+      fetchStats("custom", customFrom, customTo);
+    } else {
+      fetchStats(range);
+    }
+  }, [range, customFrom, customTo, fetchStats]);
 
-  // Aggregate category data from categoryBreakdown
   const categoryData = useMemo(() => {
     if (!data) return [];
     const map = new Map<string, { qty: number; revenue: number }>();
@@ -98,16 +119,76 @@ export function StatsView({ onBack }: { onBack: () => void }) {
       .sort((a, b) => b.revenue - a.revenue);
   }, [data]);
 
-  const rangeLabels = {
+  const rangeLabels: Record<RangeType, string> = {
     today: "Hôm nay",
     week: "Tuần này",
     month: "Tháng này",
+    custom: "Tùy chọn",
   };
-  const prevLabels = {
+
+  const prevLabels: Record<RangeType, string> = {
     today: "hôm qua",
     week: "tuần trước",
     month: "tháng trước",
+    custom: "kỳ trước",
   };
+
+  // Quick date shortcuts for custom mode
+  function setQuickRange(label: string) {
+    const now = new Date();
+    let from: Date;
+    const to = new Date();
+
+    switch (label) {
+      case "7d":
+        from = new Date(now);
+        from.setDate(now.getDate() - 6);
+        break;
+      case "14d":
+        from = new Date(now);
+        from.setDate(now.getDate() - 13);
+        break;
+      case "30d":
+        from = new Date(now);
+        from.setDate(now.getDate() - 29);
+        break;
+      case "90d":
+        from = new Date(now);
+        from.setDate(now.getDate() - 89);
+        break;
+      case "thisYear":
+        from = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        return;
+    }
+    setCustomFrom(toDateStr(from));
+    setCustomTo(toDateStr(to));
+    setRange("custom");
+  }
+
+  // Format the custom range description
+  const customRangeDesc = useMemo(() => {
+    if (range !== "custom") return "";
+    if (customFrom === customTo) {
+      return new Date(customFrom).toLocaleDateString("vi-VN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    }
+    const f = new Date(customFrom).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+    });
+    const t = new Date(customTo).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    return `${f} — ${t}`;
+  }, [range, customFrom, customTo]);
 
   return (
     <div className="flex min-h-dvh flex-col bg-gray-50">
@@ -117,25 +198,83 @@ export function StatsView({ onBack }: { onBack: () => void }) {
           <button onClick={onBack} className="text-2xl active:opacity-70">
             ←
           </button>
-          <h1 className="text-lg font-bold">Thống kê doanh thu</h1>
+          <h1 className="flex-1 text-lg font-bold">Thống kê doanh thu</h1>
+          <button
+            onClick={onHistory}
+            className="flex items-center gap-1.5 rounded-xl bg-amber-600/50 px-3 py-2 text-sm font-medium active:bg-amber-600"
+          >
+            📋 Lịch sử
+          </button>
         </div>
       </div>
 
       {/* Range Tabs */}
-      <div className="flex gap-2 bg-amber-700 px-3 pb-4">
-        {(["today", "week", "month"] as const).map((r) => (
-          <button
-            key={r}
-            onClick={() => setRange(r)}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all ${
-              range === r
-                ? "bg-white text-amber-700 shadow-md"
-                : "bg-amber-600/50 text-amber-100 active:bg-amber-600"
-            }`}
-          >
-            {rangeLabels[r]}
-          </button>
-        ))}
+      <div className="bg-amber-700 px-3 pb-3">
+        <div className="flex gap-1.5">
+          {(["today", "week", "month", "custom"] as const).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all ${
+                range === r
+                  ? "bg-white text-amber-700 shadow-md"
+                  : "bg-amber-600/50 text-amber-100 active:bg-amber-600"
+              }`}
+            >
+              {rangeLabels[r]}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom date picker */}
+        {range === "custom" && (
+          <div className="mt-3 space-y-2">
+            {/* Quick shortcuts */}
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: "7 ngày", key: "7d" },
+                { label: "14 ngày", key: "14d" },
+                { label: "30 ngày", key: "30d" },
+                { label: "90 ngày", key: "90d" },
+                { label: "Năm nay", key: "thisYear" },
+              ].map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => setQuickRange(s.key)}
+                  className="rounded-lg bg-amber-600/50 px-3 py-1.5 text-xs font-medium text-amber-100 active:bg-amber-600"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Date inputs */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <label className="mb-1 block text-[10px] uppercase text-amber-300">Từ ngày</label>
+                <input
+                  type="date"
+                  value={customFrom}
+                  max={customTo}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="w-full rounded-xl bg-amber-600/50 px-3 py-2.5 text-sm font-medium text-white outline-none focus:ring-2 focus:ring-amber-300 [color-scheme:dark]"
+                />
+              </div>
+              <span className="mt-4 text-amber-300">→</span>
+              <div className="flex-1">
+                <label className="mb-1 block text-[10px] uppercase text-amber-300">Đến ngày</label>
+                <input
+                  type="date"
+                  value={customTo}
+                  min={customFrom}
+                  max={toDateStr(new Date())}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="w-full rounded-xl bg-amber-600/50 px-3 py-2.5 text-sm font-medium text-white outline-none focus:ring-2 focus:ring-amber-300 [color-scheme:dark]"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -147,7 +286,11 @@ export function StatsView({ onBack }: { onBack: () => void }) {
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4">
           <p className="text-center text-gray-500">{error}</p>
           <button
-            onClick={() => fetchStats(range)}
+            onClick={() =>
+              range === "custom"
+                ? fetchStats("custom", customFrom, customTo)
+                : fetchStats(range)
+            }
             className="rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-semibold text-white active:bg-amber-700"
           >
             Thử lại
@@ -157,17 +300,28 @@ export function StatsView({ onBack }: { onBack: () => void }) {
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8">
           <span className="text-5xl">📊</span>
           <p className="text-lg font-semibold text-gray-400">Chưa có đơn hàng nào</p>
-          <p className="text-sm text-gray-300">{rangeLabels[range]}</p>
+          <p className="text-sm text-gray-300">
+            {range === "custom" ? customRangeDesc : rangeLabels[range]}
+          </p>
         </div>
       ) : data ? (
         <div className="flex-1 overflow-y-auto pb-8">
           {/* ── Hero Revenue Card ─────────────────────────────────── */}
           <div className="-mt-1 rounded-b-3xl bg-amber-700 px-4 pb-6 pt-2">
             <div className="rounded-2xl bg-white/10 p-5 backdrop-blur-sm">
-              <p className="text-sm font-medium text-amber-200">Tổng doanh thu</p>
-              <p className="mt-1 text-4xl font-extrabold text-white">
-                {fmt(Number(data.summary.revenue))}
-              </p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-amber-200">Tổng doanh thu</p>
+                  <p className="mt-1 text-4xl font-extrabold text-white">
+                    {fmt(Number(data.summary.revenue))}
+                  </p>
+                </div>
+                {range === "custom" && (
+                  <p className="rounded-lg bg-white/10 px-2.5 py-1 text-xs text-amber-200">
+                    {customRangeDesc}
+                  </p>
+                )}
+              </div>
               <div className="mt-2 flex items-center gap-2">
                 <span
                   className={`text-sm font-semibold ${
@@ -192,23 +346,11 @@ export function StatsView({ onBack }: { onBack: () => void }) {
               <KPICard
                 label="Số đơn"
                 value={String(data.summary.order_count)}
-                sub={changeLabel(
-                  data.summary.order_count,
-                  data.prevSummary.order_count
-                )}
-                subColor={changeColor(
-                  data.summary.order_count,
-                  data.prevSummary.order_count
-                )}
+                sub={changeLabel(data.summary.order_count, data.prevSummary.order_count)}
+                subColor={changeColor(data.summary.order_count, data.prevSummary.order_count)}
               />
-              <KPICard
-                label="TB/đơn"
-                value={fmt(data.summary.avg_order)}
-              />
-              <KPICard
-                label="Cao nhất"
-                value={fmt(data.summary.max_order)}
-              />
+              <KPICard label="TB/đơn" value={fmt(data.summary.avg_order)} />
+              <KPICard label="Cao nhất" value={fmt(data.summary.max_order)} />
             </div>
 
             {/* ── Payment Breakdown ──────────────────────────────── */}
@@ -247,7 +389,7 @@ export function StatsView({ onBack }: { onBack: () => void }) {
             )}
 
             {/* ── Daily Chart ────────────────────────────────────── */}
-            {data.daily.length > 1 && (
+            {data.daily.length > 0 && (
               <Section title="Doanh thu theo ngày">
                 <DailyChart daily={data.daily} />
               </Section>
@@ -278,9 +420,7 @@ export function StatsView({ onBack }: { onBack: () => void }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm">
-      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-400">
-        {title}
-      </h3>
+      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-400">{title}</h3>
       {children}
     </div>
   );
@@ -318,10 +458,7 @@ function PaymentBar({ data }: { data: StatsData }) {
   return (
     <div className="flex h-4 overflow-hidden rounded-full bg-gray-100">
       {cash > 0 && (
-        <div
-          className="bg-green-500 transition-all duration-500"
-          style={{ width: `${cash}%` }}
-        />
+        <div className="bg-green-500 transition-all duration-500" style={{ width: `${cash}%` }} />
       )}
       {transfer > 0 && (
         <div
@@ -366,7 +503,6 @@ function PaymentCard({
 
 function HourlyChart({ hourly }: { hourly: StatsData["hourly"] }) {
   const maxRevenue = Math.max(...hourly.map((h) => Number(h.revenue)), 1);
-  // Fill all 24 hours
   const hours = Array.from({ length: 24 }, (_, i) => {
     const found = hourly.find((h) => h.hour === i);
     return {
@@ -375,7 +511,6 @@ function HourlyChart({ hourly }: { hourly: StatsData["hourly"] }) {
       orders: found ? found.order_count : 0,
     };
   });
-  // Only show hours 7-23 for cleaner view
   const visibleHours = hours.filter((h) => h.hour >= 7 && h.hour <= 23);
 
   return (
@@ -392,7 +527,6 @@ function HourlyChart({ hourly }: { hourly: StatsData["hourly"] }) {
                 }`}
                 style={{ height: `${Math.max(height, 2)}%` }}
               />
-              {/* Tooltip on hover */}
               {isActive && (
                 <div className="pointer-events-none absolute -top-14 z-10 hidden rounded-lg bg-gray-800 px-2 py-1 text-xs text-white shadow-lg group-hover:block">
                   <p className="font-semibold">{fmt(h.revenue)}</p>
@@ -462,7 +596,6 @@ function CategoryChart({
 }) {
   return (
     <div className="space-y-3">
-      {/* Donut-like visual using stacked bar */}
       <div className="flex h-5 overflow-hidden rounded-full bg-gray-100">
         {categories.map((cat) => {
           const w = pct(cat.revenue, total);
@@ -477,7 +610,6 @@ function CategoryChart({
         })}
       </div>
 
-      {/* Legend + details */}
       <div className="grid grid-cols-2 gap-2">
         {categories.map((cat) => {
           const percentage = pct(cat.revenue, total);
@@ -490,7 +622,9 @@ function CategoryChart({
                 <p className="text-xs font-medium text-gray-600">
                   {CAT_ICONS[cat.name] || ""} {cat.name}
                 </p>
-                <p className={`text-sm font-bold ${CAT_TEXT_COLORS[cat.name] || "text-gray-700"}`}>
+                <p
+                  className={`text-sm font-bold ${CAT_TEXT_COLORS[cat.name] || "text-gray-700"}`}
+                >
                   {fmt(cat.revenue)}
                 </p>
                 <p className="text-[10px] text-gray-400">
@@ -513,15 +647,13 @@ function TopItemsList({ items }: { items: StatsData["topItems"] }) {
       {items.map((item, i) => {
         const barWidth = pct(item.qty, maxQty);
         const cat = ITEM_TO_CATEGORY.get(item.name);
-        const barColor = cat ? (CAT_COLORS[cat] || "bg-amber-500") : "bg-amber-500";
+        const barColor = cat ? CAT_COLORS[cat] || "bg-amber-500" : "bg-amber-500";
 
         return (
           <div key={item.name} className="flex items-center gap-2.5">
             <span
               className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                i < 3
-                  ? "bg-amber-600 text-white"
-                  : "bg-gray-100 text-gray-500"
+                i < 3 ? "bg-amber-600 text-white" : "bg-gray-100 text-gray-500"
               }`}
             >
               {i + 1}

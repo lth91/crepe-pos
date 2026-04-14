@@ -130,7 +130,7 @@ export default function POS() {
 
   // ── Sub-views ──────────────────────────────────────────────────────
   if (view === "stats") {
-    return <StatsView onBack={() => setView("pos")} />;
+    return <StatsView onBack={() => setView("pos")} onHistory={() => setView("history")} />;
   }
 
   if (view === "history") {
