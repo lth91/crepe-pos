@@ -254,60 +254,65 @@ export default function POS() {
           </button>
         </header>
 
-        {/* Category Tabs — 44px height */}
-        {!search && (
-          <div className="flex gap-1.5 overflow-x-auto border-b border-zinc-100 px-4 py-2 scrollbar-hide">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
-                  category === cat
-                    ? "bg-zinc-900 text-white"
-                    : "text-zinc-500 active:bg-zinc-100"
-                }`}
-              >
-                <CategoryIcon category={cat} size={16} />
-                <span>{cat}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Menu Grid — larger cards for mobile */}
-        <div className="flex-1 overflow-y-auto p-3 pb-28 lg:pb-4">
-          {search && displayedItems.length === 0 && (
-            <p className="mt-16 text-center text-sm text-zinc-400">Không tìm thấy món nào</p>
-          )}
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-            {displayedItems.map((item) => {
-              const inCartCount = cart
-                .filter((c) => c.name === item.name)
-                .reduce((s, c) => s + c.qty, 0);
-              return (
+        {/* Category Sidebar + Menu Grid */}
+        <div className="flex min-h-0 flex-1">
+          {/* Left sidebar — always visible, icon + short label */}
+          {!search && (
+            <div className="flex w-[72px] shrink-0 flex-col gap-1 overflow-y-auto border-r border-zinc-100 bg-zinc-50/50 py-2 px-1.5 scrollbar-hide">
+              {CATEGORIES.map((cat) => (
                 <button
-                  key={item.name}
-                  onClick={() => handleItemTap(item)}
-                  className={`relative flex flex-col items-start rounded-xl border p-4 text-left transition-all active:scale-[0.97] active:bg-zinc-50 ${
-                    inCartCount > 0
-                      ? "border-amber-300 bg-amber-50/50"
-                      : "border-zinc-200 bg-white"
+                  key={cat}
+                  onClick={() => setCategory(cat)}
+                  className={`flex flex-col items-center gap-1 rounded-xl px-1 py-3 text-center transition-colors ${
+                    category === cat
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-400 active:bg-zinc-100 active:text-zinc-600"
                   }`}
                 >
-                  {inCartCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white">
-                      {inCartCount}
-                    </span>
-                  )}
-                  <span className="text-[15px] font-medium leading-snug text-zinc-800">
-                    {item.name}
-                  </span>
-                  <span className="mt-auto pt-2 text-[15px] font-semibold text-amber-700">
-                    {fmt(item.price)}
+                  <CategoryIcon category={cat} size={20} />
+                  <span className="text-[11px] font-medium leading-tight">
+                    {cat === "Sweet Crepes" ? "Sweet" : cat === "Savory Crepes" ? "Savory" : cat}
                   </span>
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          )}
+
+          {/* Menu Grid */}
+          <div className="flex-1 overflow-y-auto p-3 pb-28 lg:pb-4">
+            {search && displayedItems.length === 0 && (
+              <p className="mt-16 text-center text-sm text-zinc-400">Không tìm thấy món nào</p>
+            )}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+              {displayedItems.map((item) => {
+                const inCartCount = cart
+                  .filter((c) => c.name === item.name)
+                  .reduce((s, c) => s + c.qty, 0);
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => handleItemTap(item)}
+                    className={`relative flex flex-col items-start rounded-xl border p-3.5 text-left transition-all active:scale-[0.97] active:bg-zinc-50 ${
+                      inCartCount > 0
+                        ? "border-amber-300 bg-amber-50/50"
+                        : "border-zinc-200 bg-white"
+                    }`}
+                  >
+                    {inCartCount > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white">
+                        {inCartCount}
+                      </span>
+                    )}
+                    <span className="text-[15px] font-medium leading-snug text-zinc-800">
+                      {item.name}
+                    </span>
+                    <span className="mt-auto pt-2 text-[15px] font-semibold text-amber-700">
+                      {fmt(item.price)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
