@@ -41,7 +41,7 @@ export function CartSheet({
           cartOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"
         }`}
       >
-        <div className="flex justify-center pt-2 lg:hidden">
+        <div className="flex justify-center pt-2.5 lg:hidden">
           <div className="h-1 w-10 rounded-full bg-zinc-200" />
         </div>
 
@@ -52,20 +52,20 @@ export function CartSheet({
               <span className="ml-1.5 text-sm font-normal text-zinc-400">({itemCount})</span>
             )}
           </h2>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {cart.length > 0 && (
               <button
                 onClick={clearCart}
-                className="text-xs font-medium text-red-500 hover:text-red-600"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-red-500 active:bg-red-50"
               >
                 Xoá hết
               </button>
             )}
             <button
               onClick={() => setCartOpen(false)}
-              className="text-zinc-300 hover:text-zinc-500 lg:hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-300 active:bg-zinc-100 lg:hidden"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -74,41 +74,41 @@ export function CartSheet({
           {cart.length === 0 ? (
             <p className="py-16 text-center text-sm text-zinc-300">Chưa có món nào</p>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {cart.map((item) => (
                 <div
                   key={item.cartKey}
-                  className="flex items-center gap-3 rounded-lg border border-zinc-100 p-3"
+                  className="flex items-center gap-3 rounded-xl border border-zinc-100 p-3"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-zinc-800">{item.name}</p>
+                    <p className="truncate text-[15px] font-medium text-zinc-800">{item.name}</p>
                     {item.extras && item.extras.length > 0 && (
-                      <p className="truncate text-xs text-amber-600">
+                      <p className="truncate text-sm text-amber-600">
                         + {item.extras.map((e) => e.name).join(", ")}
                       </p>
                     )}
-                    <p className="text-xs text-zinc-400">{fmt(itemUnitPrice(item))}</p>
+                    <p className="text-sm text-zinc-400">{fmt(itemUnitPrice(item))}</p>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => updateQty(item.cartKey, -1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 active:bg-zinc-100"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 text-zinc-500 active:bg-zinc-100"
                     >
-                      <Minus size={14} />
+                      <Minus size={16} />
                     </button>
-                    <span className="w-7 text-center text-sm font-semibold">{item.qty}</span>
+                    <span className="w-8 text-center text-base font-semibold">{item.qty}</span>
                     <button
                       onClick={() => updateQty(item.cartKey, 1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 active:bg-zinc-100"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 text-zinc-500 active:bg-zinc-100"
                     >
-                      <Plus size={14} />
+                      <Plus size={16} />
                     </button>
                   </div>
                   <button
                     onClick={() => removeItem(item.cartKey)}
-                    className="text-zinc-300 hover:text-red-500"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-300 active:text-red-500 active:bg-red-50"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               ))}
@@ -116,7 +116,7 @@ export function CartSheet({
           )}
         </div>
 
-        <div className="border-t border-zinc-100 px-4 py-4">
+        <div className="border-t border-zinc-100 px-4 py-4 pb-safe">
           <div className="mb-3 flex justify-between text-lg font-semibold">
             <span className="text-zinc-500">Tổng</span>
             <span className="text-zinc-900">{fmt(total)}</span>
@@ -124,7 +124,7 @@ export function CartSheet({
           <button
             onClick={openPayment}
             disabled={cart.length === 0}
-            className="w-full rounded-xl bg-zinc-900 py-3.5 text-sm font-semibold text-white transition-colors active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+            className="w-full rounded-xl bg-zinc-900 py-4 text-base font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
             Thanh toán
           </button>

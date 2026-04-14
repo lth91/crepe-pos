@@ -121,9 +121,7 @@ export default function POS() {
   }
 
   if (view === "stats") {
-    return (
-      <StatsView onBack={() => setView("pos")} onHistory={() => setView("history")} />
-    );
+    return <StatsView onBack={() => setView("pos")} onHistory={() => setView("history")} />;
   }
   if (view === "history") {
     return <HistoryView onBack={() => setView("pos")} />;
@@ -134,10 +132,9 @@ export default function POS() {
 
   return (
     <div className="flex h-dvh flex-col bg-white text-zinc-800 lg:flex-row">
-      {/* Menu Area */}
       <div className="flex min-h-0 flex-1 flex-col">
-        {/* Header */}
-        <header className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3">
+        {/* Header — 44px+ touch targets */}
+        <header className="flex items-center gap-2 border-b border-zinc-100 px-4 py-2.5 pt-safe">
           <h1 className="text-lg font-semibold text-zinc-900">Crepe House</h1>
           <div className="relative ml-auto flex-1 max-w-xs">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
@@ -146,62 +143,62 @@ export default function POS() {
               placeholder="Tìm món..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-9 pr-8 py-2 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
+              className="w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-9 pr-9 py-2.5 text-base outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                className="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-zinc-400 active:text-zinc-600"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             )}
           </div>
           <button
             onClick={() => setView("history")}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 active:bg-zinc-200"
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 active:bg-zinc-100"
             title="Lịch sử"
           >
-            <ClipboardList size={18} />
+            <ClipboardList size={20} />
           </button>
           <button
             onClick={() => {
               if (isOwner) setView("stats");
               else setPinModal(true);
             }}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 active:bg-zinc-200"
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 active:bg-zinc-100"
             title="Thống kê"
           >
-            <BarChart3 size={18} />
+            <BarChart3 size={20} />
           </button>
         </header>
 
-        {/* Category Tabs */}
+        {/* Category Tabs — 44px height */}
         {!search && (
-          <div className="flex gap-1 overflow-x-auto border-b border-zinc-100 px-4 py-2 scrollbar-hide">
+          <div className="flex gap-1.5 overflow-x-auto border-b border-zinc-100 px-4 py-2 scrollbar-hide">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
                   category === cat
                     ? "bg-zinc-900 text-white"
-                    : "text-zinc-500 hover:bg-zinc-100 active:bg-zinc-200"
+                    : "text-zinc-500 active:bg-zinc-100"
                 }`}
               >
-                <CategoryIcon category={cat} size={15} />
+                <CategoryIcon category={cat} size={16} />
                 <span>{cat}</span>
               </button>
             ))}
           </div>
         )}
 
-        {/* Menu Grid */}
-        <div className="flex-1 overflow-y-auto p-4 pb-24 lg:pb-4">
+        {/* Menu Grid — larger cards for mobile */}
+        <div className="flex-1 overflow-y-auto p-3 pb-28 lg:pb-4">
           {search && displayedItems.length === 0 && (
             <p className="mt-16 text-center text-sm text-zinc-400">Không tìm thấy món nào</p>
           )}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {displayedItems.map((item) => {
               const inCartCount = cart
                 .filter((c) => c.name === item.name)
@@ -210,21 +207,21 @@ export default function POS() {
                 <button
                   key={item.name}
                   onClick={() => handleItemTap(item)}
-                  className={`relative flex flex-col items-start rounded-xl border p-3.5 text-left transition-all active:scale-[0.98] ${
+                  className={`relative flex flex-col items-start rounded-xl border p-4 text-left transition-all active:scale-[0.97] active:bg-zinc-50 ${
                     inCartCount > 0
                       ? "border-amber-300 bg-amber-50/50"
-                      : "border-zinc-150 bg-white hover:border-zinc-300"
+                      : "border-zinc-200 bg-white"
                   }`}
                 >
                   {inCartCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-[11px] font-semibold text-white">
+                    <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white">
                       {inCartCount}
                     </span>
                   )}
-                  <span className="text-sm font-medium leading-snug text-zinc-800">
+                  <span className="text-[15px] font-medium leading-snug text-zinc-800">
                     {item.name}
                   </span>
-                  <span className="mt-auto pt-2 text-sm font-semibold text-amber-700">
+                  <span className="mt-auto pt-2 text-[15px] font-semibold text-amber-700">
                     {fmt(item.price)}
                   </span>
                 </button>
@@ -234,19 +231,20 @@ export default function POS() {
         </div>
       </div>
 
-      {/* Floating Cart Button (mobile) */}
+      {/* Floating Cart Button — safe area aware */}
       {cart.length > 0 && !cartOpen && (
         <button
           onClick={() => setCartOpen(true)}
-          className="fixed bottom-4 left-4 right-4 z-30 flex items-center justify-between rounded-xl bg-zinc-900 px-4 py-3.5 text-white shadow-lg active:bg-zinc-800 lg:hidden"
+          className="fixed bottom-5 left-4 right-4 z-30 flex items-center justify-between rounded-2xl bg-zinc-900 px-5 py-4 text-white shadow-lg active:bg-zinc-800 lg:hidden pb-safe"
+          style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
         >
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/15 text-xs font-semibold">
+          <div className="flex items-center gap-3">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 text-sm font-semibold">
               {itemCount}
             </span>
-            <span className="text-sm font-medium">Xem đơn hàng</span>
+            <span className="text-[15px] font-medium">Xem đơn hàng</span>
           </div>
-          <span className="text-sm font-semibold">{fmt(total)}</span>
+          <span className="text-[15px] font-semibold">{fmt(total)}</span>
         </button>
       )}
 

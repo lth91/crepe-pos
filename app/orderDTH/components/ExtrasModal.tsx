@@ -37,17 +37,17 @@ export function ExtrasModal({ item, availableExtras, onConfirm, onClose }: Props
           {fmt(item.price)} · Chọn thêm topping?
         </p>
 
-        <div className="mb-4 grid grid-cols-2 gap-1.5 max-h-[40dvh] overflow-y-auto">
+        <div className="mb-4 grid grid-cols-2 gap-2 max-h-[40dvh] overflow-y-auto">
           {availableExtras.map((extra) => {
             const selected = selectedExtras.some((e) => e.name === extra.name);
             return (
               <button
                 key={extra.name}
                 onClick={() => toggleExtra(extra)}
-                className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-all ${
+                className={`flex items-center justify-between rounded-xl px-3.5 py-3.5 text-sm transition-all ${
                   selected
                     ? "bg-zinc-900 font-medium text-white"
-                    : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 active:bg-zinc-50"
+                    : "border border-zinc-200 text-zinc-600 active:bg-zinc-50"
                 }`}
               >
                 <span>{extra.name}</span>
@@ -60,7 +60,7 @@ export function ExtrasModal({ item, availableExtras, onConfirm, onClose }: Props
         </div>
 
         {selectedExtras.length > 0 && (
-          <div className="mb-4 rounded-lg bg-zinc-50 p-3 text-sm">
+          <div className="mb-4 rounded-xl bg-zinc-50 p-3.5 text-sm">
             <span className="text-zinc-500">Tổng: </span>
             <span className="font-semibold text-zinc-900">
               {fmt(item.price + selectedExtras.reduce((s, e) => s + e.price, 0))}
@@ -68,16 +68,16 @@ export function ExtrasModal({ item, availableExtras, onConfirm, onClose }: Props
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2.5 pb-safe">
           <button
             onClick={onClose}
-            className="flex-1 rounded-xl border border-zinc-200 py-3.5 text-sm font-medium text-zinc-600 active:bg-zinc-50"
+            className="flex-1 rounded-xl border border-zinc-200 py-4 text-base font-medium text-zinc-600 active:bg-zinc-50"
           >
             Huỷ
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 rounded-xl bg-zinc-900 py-3.5 text-sm font-semibold text-white active:bg-zinc-800"
+            className="flex-1 rounded-xl bg-zinc-900 py-4 text-base font-semibold text-white active:bg-zinc-800"
           >
             {selectedExtras.length > 0 ? "Thêm với topping" : "Thêm không topping"}
           </button>

@@ -46,8 +46,8 @@ export function PinModal({ onSuccess, onClose }: Props) {
         <div className="mb-4 flex justify-center lg:hidden">
           <div className="h-1 w-10 rounded-full bg-zinc-200" />
         </div>
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100">
-          <Lock size={18} className="text-zinc-500" />
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
+          <Lock size={20} className="text-zinc-500" />
         </div>
         <h3 className="mb-0.5 text-lg font-semibold text-zinc-900">Nhập mã PIN</h3>
         <p className="mb-4 text-sm text-zinc-400">Chỉ chủ cửa hàng được xem thống kê</p>
@@ -63,7 +63,7 @@ export function PinModal({ onSuccess, onClose }: Props) {
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSubmit();
           }}
-          className={`mb-4 w-full rounded-lg border px-4 py-3 text-center text-2xl font-semibold tracking-[0.3em] outline-none transition-colors focus:border-zinc-400 ${
+          className={`mb-4 w-full rounded-xl border px-4 py-3.5 text-center text-2xl font-semibold tracking-[0.3em] outline-none transition-colors focus:border-zinc-400 ${
             pinError ? "border-red-300 bg-red-50" : "border-zinc-200"
           }`}
           placeholder="••••"
@@ -72,20 +72,20 @@ export function PinModal({ onSuccess, onClose }: Props) {
         {pinError && (
           <p className="mb-3 text-center text-sm text-red-500">Mã PIN không đúng</p>
         )}
-        <div className="flex gap-2">
+        <div className="flex gap-2.5 pb-safe">
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 rounded-xl border border-zinc-200 py-3.5 text-sm font-medium text-zinc-600 active:bg-zinc-50 disabled:opacity-50"
+            className="flex-1 rounded-xl border border-zinc-200 py-4 text-base font-medium text-zinc-600 active:bg-zinc-50 disabled:opacity-50"
           >
             Huỷ
           </button>
           <button
             onClick={handleSubmit}
             disabled={pinInput.length < 4 || loading}
-            className="flex-1 rounded-xl bg-zinc-900 py-3.5 text-sm font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+            className="flex-1 rounded-xl bg-zinc-900 py-4 text-base font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
-            {loading ? <><Loader2 size={14} className="animate-spin" /> Đang xác thực...</> : "Xác nhận"}
+            {loading ? <><Loader2 size={16} className="inline animate-spin mr-1" /> Xác thực...</> : "Xác nhận"}
           </button>
         </div>
       </div>

@@ -157,28 +157,28 @@ export function StatsView({
   return (
     <div className="flex min-h-dvh flex-col bg-white">
       {/* Header */}
-      <header className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3">
-        <button onClick={onBack} className="text-zinc-400 hover:text-zinc-600"><ArrowLeft size={18} /></button>
+      <header className="flex items-center gap-3 border-b border-zinc-100 px-4 py-2.5 pt-safe">
+        <button onClick={onBack} className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 active:bg-zinc-100"><ArrowLeft size={20} /></button>
         <h1 className="flex-1 text-base font-semibold text-zinc-900">Thống kê</h1>
         <button
           onClick={onHistory}
-          className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 hover:border-zinc-300 active:bg-zinc-50"
+          className="flex h-11 items-center gap-1.5 rounded-xl border border-zinc-200 px-4 text-sm font-medium text-zinc-500 active:bg-zinc-50"
         >
-          <ClipboardList size={13} /> Lịch sử
+          <ClipboardList size={15} /> Lịch sử
         </button>
       </header>
 
       {/* Range Tabs */}
       <div className="border-b border-zinc-100 px-4 py-2.5">
-        <div className="flex gap-1">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
           {(["today", "yesterday", "week", "month", "custom"] as const).map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={`rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+              className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
                 range === r
                   ? "bg-zinc-900 text-white"
-                  : "text-zinc-500 hover:bg-zinc-100"
+                  : "text-zinc-500 active:bg-zinc-100"
               }`}
             >
               {labels[r]}
@@ -199,7 +199,7 @@ export function StatsView({
                 <button
                   key={s.key}
                   onClick={() => setQuickRange(s.key)}
-                  className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs text-zinc-500 hover:border-zinc-300 active:bg-zinc-50"
+                  className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-500 active:bg-zinc-50"
                 >
                   {s.label}
                 </button>
@@ -377,7 +377,7 @@ function PayItem({ label, amount, count, dot }: { label: string; amount: number;
         <span className="text-xs text-zinc-400">{label}</span>
       </div>
       <p className="mt-0.5 text-sm font-semibold text-zinc-800">{fmt(amount)}</p>
-      <p className="text-[11px] text-zinc-400">{count} đơn</p>
+      <p className="text-xs text-zinc-400">{count} đơn</p>
     </div>
   );
 }
@@ -401,7 +401,7 @@ function HourlyChart({ hourly }: { hourly: StatsData["hourly"] }) {
                 style={{ height: `${Math.max(height, 2)}%` }}
               />
               {h.revenue > 0 && (
-                <div className="pointer-events-none absolute -top-12 z-10 hidden rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white shadow group-hover:block">
+                <div className="pointer-events-none absolute -top-12 z-10 hidden rounded-md bg-zinc-800 px-2 py-1 text-xs text-white shadow group-hover:block">
                   <p className="font-medium">{fmt(h.revenue)}</p>
                   <p className="text-zinc-400">{h.orders} đơn</p>
                 </div>
@@ -412,7 +412,7 @@ function HourlyChart({ hourly }: { hourly: StatsData["hourly"] }) {
       </div>
       <div className="mt-1 flex gap-[3px]">
         {hours.map(h => (
-          <div key={h.hour} className="flex-1 text-center text-[9px] text-zinc-400">
+          <div key={h.hour} className="flex-1 text-center text-xs text-zinc-400">
             {h.hour % 3 === 0 ? `${h.hour}` : ""}
           </div>
         ))}
@@ -436,13 +436,13 @@ function DailyChart({ daily }: { daily: StatsData["daily"] }) {
                   className="flex h-full items-center rounded bg-zinc-800 px-2 transition-all"
                   style={{ width: `${Math.max(w, 6)}%` }}
                 >
-                  {w > 35 && <span className="text-[10px] font-medium text-white">{fmt(Number(d.revenue))}</span>}
+                  {w > 35 && <span className="text-xs font-medium text-white">{fmt(Number(d.revenue))}</span>}
                 </div>
               </div>
             </div>
             <div className="w-18 shrink-0 text-right">
               {w <= 35 && <span className="text-xs font-medium text-zinc-700">{fmt(Number(d.revenue))}</span>}
-              <p className="text-[10px] text-zinc-400">{d.order_count} đơn</p>
+              <p className="text-xs text-zinc-400">{d.order_count} đơn</p>
             </div>
           </div>
         );
@@ -460,7 +460,7 @@ function TopItems({ items }: { items: StatsData["topItems"] }) {
         const cat = ITEM_TO_CATEGORY.get(item.name);
         return (
           <div key={item.name} className="flex items-center gap-2">
-            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-semibold ${
+            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs font-semibold ${
               i < 3 ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-500"
             }`}>
               {i + 1}
@@ -476,7 +476,7 @@ function TopItems({ items }: { items: StatsData["topItems"] }) {
                   style={{ width: `${Math.max(w, 3)}%` }}
                 />
               </div>
-              <p className="mt-0.5 text-[10px] text-zinc-400">x{item.qty}{cat ? ` · ${cat}` : ""}</p>
+              <p className="mt-0.5 text-xs text-zinc-400">x{item.qty}{cat ? ` · ${cat}` : ""}</p>
             </div>
           </div>
         );

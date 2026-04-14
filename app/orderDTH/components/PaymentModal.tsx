@@ -75,8 +75,7 @@ export function PaymentModal({ cart, total, onClose, onSuccess }: Props) {
           Thanh toán <span className="text-amber-700">{fmt(total)}</span>
         </h3>
 
-        {/* Method Selection */}
-        <div className="mb-5 flex gap-2">
+        <div className="mb-5 flex gap-2.5">
           {(
             [
               ["cash", "Tiền mặt", Banknote],
@@ -91,46 +90,45 @@ export function PaymentModal({ cart, total, onClose, onSuccess }: Props) {
                 if (method === "cash") setCashGiven(0);
                 setError(null);
               }}
-              className={`flex flex-1 flex-col items-center gap-1.5 rounded-lg py-3 text-sm font-medium transition-all ${
+              className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl py-4 text-sm font-medium transition-all ${
                 payMethod === method
                   ? "bg-zinc-900 text-white"
-                  : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 active:bg-zinc-50"
+                  : "border border-zinc-200 text-zinc-600 active:bg-zinc-50"
               }`}
             >
-              <Icon size={18} />
-              <span className="text-xs">{label}</span>
+              <Icon size={20} />
+              <span className="text-sm">{label}</span>
             </button>
           ))}
         </div>
 
-        {/* Cash input */}
         {payMethod === "cash" && (
           <div className="mb-5">
-            <label className="mb-1.5 block text-xs font-medium text-zinc-500">Khách đưa</label>
+            <label className="mb-1.5 block text-sm font-medium text-zinc-500">Khách đưa</label>
             <input
               type="number"
               inputMode="numeric"
               value={cashGiven || ""}
               onChange={(e) => setCashGiven(Number(e.target.value))}
-              className="mb-2.5 w-full rounded-lg border border-zinc-200 px-3.5 py-2.5 text-lg font-semibold outline-none focus:border-zinc-400"
+              className="mb-3 w-full rounded-xl border border-zinc-200 px-4 py-3 text-xl font-semibold outline-none focus:border-zinc-400"
               placeholder="0"
             />
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-2">
               {CASH_DENOMINATIONS.map((v) => (
                 <button
                   key={v}
                   onClick={() => setCashGiven((prev) => prev + v)}
-                  className="rounded-lg border border-zinc-200 py-2.5 text-xs font-medium text-zinc-600 active:bg-zinc-50"
+                  className="rounded-xl border border-zinc-200 py-3 text-sm font-medium text-zinc-600 active:bg-zinc-50"
                 >
                   {fmt(v)}
                 </button>
               ))}
             </div>
             {cashGiven > 0 && (
-              <div className="mt-3 rounded-lg bg-zinc-50 p-3 text-center">
-                <span className="text-xs text-zinc-500">Trả lại: </span>
+              <div className="mt-3 rounded-xl bg-zinc-50 p-4 text-center">
+                <span className="text-sm text-zinc-500">Trả lại: </span>
                 <span
-                  className={`text-xl font-semibold ${
+                  className={`text-2xl font-semibold ${
                     cashGiven >= total ? "text-green-600" : "text-red-500"
                   }`}
                 >
@@ -142,25 +140,25 @@ export function PaymentModal({ cart, total, onClose, onSuccess }: Props) {
         )}
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-center text-sm text-red-600">
+          <div className="mb-4 rounded-xl bg-red-50 p-3 text-center text-sm text-red-600">
             {error}
           </div>
         )}
 
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-2.5 pt-1 pb-safe">
           <button
             onClick={onClose}
             disabled={saving}
-            className="flex-1 rounded-xl border border-zinc-200 py-3.5 text-sm font-medium text-zinc-600 active:bg-zinc-50 disabled:opacity-50"
+            className="flex-1 rounded-xl border border-zinc-200 py-4 text-base font-medium text-zinc-600 active:bg-zinc-50 disabled:opacity-50"
           >
             Huỷ
           </button>
           <button
             onClick={confirmPayment}
             disabled={!payMethod || (payMethod === "cash" && cashGiven < total) || saving}
-            className="flex-1 rounded-xl bg-zinc-900 py-3.5 text-sm font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+            className="flex-1 rounded-xl bg-zinc-900 py-4 text-base font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
-            {saving ? <><Loader2 size={14} className="inline animate-spin mr-1" /> Đang xử lý...</> : "Xác nhận"}
+            {saving ? <><Loader2 size={16} className="inline animate-spin mr-1" /> Đang xử lý...</> : "Xác nhận"}
           </button>
         </div>
       </div>
