@@ -2,7 +2,7 @@
 
 import type { CartItem } from "@/lib/types";
 import { fmt, itemUnitPrice } from "@/lib/menu";
-import { X, Minus, Plus, Trash2 } from "@/lib/icons";
+import { X, Minus, Plus, Trash2, Save } from "@/lib/icons";
 
 type Props = {
   cart: CartItem[];
@@ -14,6 +14,7 @@ type Props = {
   removeItem: (key: string) => void;
   clearCart: () => void;
   openPayment: () => void;
+  onSaveDraft: () => void;
 };
 
 export function CartSheet({
@@ -26,6 +27,7 @@ export function CartSheet({
   removeItem,
   clearCart,
   openPayment,
+  onSaveDraft,
 }: Props) {
   return (
     <>
@@ -121,13 +123,23 @@ export function CartSheet({
             <span className="text-zinc-500">Tổng</span>
             <span className="text-zinc-900">{fmt(total)}</span>
           </div>
-          <button
-            onClick={openPayment}
-            disabled={cart.length === 0}
-            className="w-full rounded-xl bg-zinc-900 py-4 text-base font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
-          >
-            Thanh toán
-          </button>
+          <div className="flex gap-2.5">
+            <button
+              onClick={onSaveDraft}
+              disabled={cart.length === 0}
+              className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl border border-zinc-200 text-zinc-500 active:bg-zinc-50 disabled:opacity-30"
+              title="Lưu nháp"
+            >
+              <Save size={20} />
+            </button>
+            <button
+              onClick={openPayment}
+              disabled={cart.length === 0}
+              className="flex-1 rounded-xl bg-zinc-900 py-4 text-base font-semibold text-white active:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+            >
+              Thanh toán
+            </button>
+          </div>
         </div>
       </div>
     </>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import type { MenuItem, Extra, CartItem, PayMethod } from "@/lib/types";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import type { MenuItem, Extra, CartItem, PayMethod, Draft } from "@/lib/types";
 import {
   MENU,
   CATEGORIES,
@@ -10,7 +10,7 @@ import {
   makeCartKey,
   itemTotal,
 } from "@/lib/menu";
-import { Search, X, ClipboardList, BarChart3, CategoryIcon } from "@/lib/icons";
+import { Search, X, ClipboardList, BarChart3, FileText, CategoryIcon } from "@/lib/icons";
 import { StatsView } from "./components/StatsView";
 import { HistoryView } from "./components/HistoryView";
 import { CartSheet } from "./components/CartSheet";
@@ -18,6 +18,9 @@ import { PaymentModal } from "./components/PaymentModal";
 import { ExtrasModal } from "./components/ExtrasModal";
 import { PinModal } from "./components/PinModal";
 import { ReceiptView } from "./components/ReceiptView";
+import { DraftsModal } from "./components/DraftsModal";
+
+const DRAFTS_KEY = "crepe-pos-drafts";
 
 export default function POS() {
   const [view, setView] = useState<"pos" | "stats" | "history">("pos");
@@ -38,6 +41,66 @@ export default function POS() {
   } | null>(null);
   const [pinModal, setPinModal] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+
+  // Drafts
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [showDrafts, setShowDrafts] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+
+  // Load drafts from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFTS_KEY);
+      if (saved) setDrafts(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  // Persist drafts to localStorage
+  const saveDraftsToStorage = useCallback((next: Draft[]) => {
+    setDrafts(next);
+    localStorage.setItem(DRAFTS_KEY, JSON.stringify(next));
+  }, []);
+
+  function saveDraft() {
+    if (cart.length === 0) return;
+    const t = cart.reduce((s, i) => s + itemTotal(i), 0);
+
+    if (editingDraftId) {
+      // Update existing draft
+      const next = drafts.map((d) =>
+        d.id === editingDraftId
+          ? { ...d, items: [...cart], total: t, created_at: new Date().toISOString() }
+          : d
+      );
+      saveDraftsToStorage(next);
+      setEditingDraftId(null);
+    } else {
+      // Create new draft
+      const draft: Draft = {
+        id: crypto.randomUUID(),
+        items: [...cart],
+        total: t,
+        note: `Bàn ${drafts.length + 1}`,
+        created_at: new Date().toISOString(),
+      };
+      saveDraftsToStorage([draft, ...drafts]);
+    }
+
+    setCart([]);
+    setCartOpen(false);
+  }
+
+  function loadDraft(draft: Draft) {
+    setCart(draft.items);
+    setEditingDraftId(draft.id);
+    setShowDrafts(false);
+    setCartOpen(false);
+  }
+
+  function deleteDraft(id: string) {
+    saveDraftsToStorage(drafts.filter((d) => d.id !== id));
+    if (editingDraftId === id) setEditingDraftId(null);
+  }
 
   useEffect(() => {
     fetch("/api/setup").catch(() => {});
@@ -111,6 +174,11 @@ export default function POS() {
     setReceipt(r);
     setCart([]);
     setShowPayment(false);
+    // Remove draft if paying from a draft
+    if (editingDraftId) {
+      saveDraftsToStorage(drafts.filter((d) => d.id !== editingDraftId));
+      setEditingDraftId(null);
+    }
   }
 
   function newOrder() {
@@ -118,6 +186,7 @@ export default function POS() {
     setCart([]);
     setSearch("");
     setCategory(CATEGORIES[0]);
+    setEditingDraftId(null);
   }
 
   if (view === "stats") {
@@ -154,6 +223,18 @@ export default function POS() {
               </button>
             )}
           </div>
+          <button
+            onClick={() => setShowDrafts(true)}
+            className="relative flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 active:bg-zinc-100"
+            title="Đơn nháp"
+          >
+            <FileText size={20} />
+            {drafts.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[11px] font-semibold text-white">
+                {drafts.length}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setView("history")}
             className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 active:bg-zinc-100"
@@ -258,6 +339,7 @@ export default function POS() {
         removeItem={removeItem}
         clearCart={() => setCart([])}
         openPayment={openPayment}
+        onSaveDraft={saveDraft}
       />
 
       {extrasModal && (
@@ -290,6 +372,22 @@ export default function POS() {
           }}
           onClose={() => setPinModal(false)}
         />
+      )}
+
+      {showDrafts && (
+        <DraftsModal
+          drafts={drafts}
+          onLoad={loadDraft}
+          onDelete={deleteDraft}
+          onClose={() => setShowDrafts(false)}
+        />
+      )}
+
+      {/* Editing draft indicator */}
+      {editingDraftId && cart.length > 0 && (
+        <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center bg-amber-500 py-1.5 pt-safe text-sm font-medium text-white lg:hidden">
+          Đang sửa đơn nháp · Bấm Thanh toán hoặc Lưu lại
+        </div>
       )}
     </div>
   );

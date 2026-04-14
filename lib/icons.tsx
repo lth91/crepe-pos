@@ -22,6 +22,10 @@ import {
   Loader2,
   ArrowLeft,
   RotateCcw,
+  Save,
+  FileText,
+  Pencil,
+  Clock,
 } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 
@@ -44,6 +48,10 @@ export {
   Loader2,
   ArrowLeft,
   RotateCcw,
+  Save,
+  FileText,
+  Pencil,
+  Clock,
 };
 
 // Category icons as React components

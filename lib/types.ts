@@ -32,3 +32,11 @@ export type Order = {
   method: PayMethod;
   created_at: string;
 };
+
+export type Draft = {
+  id: string;
+  items: CartItem[];
+  total: number;
+  note: string;
+  created_at: string;
+};
