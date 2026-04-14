@@ -405,6 +405,7 @@ export default function POS() {
         <PaymentModal
           cart={cart}
           total={total}
+          staffId={user?.id}
           onClose={() => setShowPayment(false)}
           onSuccess={handlePaymentSuccess}
         />

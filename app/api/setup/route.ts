@@ -9,8 +9,14 @@ export async function GET() {
       items JSONB NOT NULL,
       total INTEGER NOT NULL,
       method TEXT NOT NULL,
+      staff TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `;
+
+  // Add staff column if table already exists without it
+  await sql`
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS staff TEXT
   `;
 
   await sql`

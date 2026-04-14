@@ -8,6 +8,7 @@ import { Banknote, ArrowLeftRight, CreditCard, Loader2 } from "@/lib/icons";
 type Props = {
   cart: CartItem[];
   total: number;
+  staffId?: string;
   onClose: () => void;
   onSuccess: (receipt: {
     items: CartItem[];
@@ -17,7 +18,7 @@ type Props = {
   }) => void;
 };
 
-export function PaymentModal({ cart, total, onClose, onSuccess }: Props) {
+export function PaymentModal({ cart, total, staffId, onClose, onSuccess }: Props) {
   const [payMethod, setPayMethod] = useState<PayMethod | null>(null);
   const [cashGiven, setCashGiven] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -44,6 +45,7 @@ export function PaymentModal({ cart, total, onClose, onSuccess }: Props) {
           })),
           total,
           method: payMethod,
+          staff: staffId,
         }),
       });
 

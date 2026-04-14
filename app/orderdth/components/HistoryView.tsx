@@ -96,6 +96,7 @@ export function HistoryView({ onBack, canDelete }: { onBack: () => void; canDele
                   <p className="text-sm text-zinc-500">{fmtTime(order.created_at)}</p>
                   <p className="text-sm text-zinc-400">
                     {order.items.length} món · {methodLabel(order.method)}
+                    {order.staff && <> · <span className="text-zinc-500 font-medium">{order.staff}</span></>}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

@@ -30,6 +30,7 @@ export type Order = {
   items: CartItem[];
   total: number;
   method: PayMethod;
+  staff: string | null;
   created_at: string;
 };
 

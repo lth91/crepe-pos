@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const sql = getDb();
 
   const rows = await sql`
-    SELECT id, items, total, method, created_at
+    SELECT id, items, total, method, staff, created_at
     FROM orders
     ORDER BY created_at DESC
     LIMIT ${limit} OFFSET ${offset}
@@ -38,10 +38,11 @@ export async function POST(req: Request) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { items, total, method } = body as {
+  const { items, total, method, staff } = body as {
     items?: unknown[];
     total?: number;
     method?: string;
+    staff?: string;
   };
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -74,8 +75,8 @@ export async function POST(req: Request) {
 
   const sql = getDb();
   const result = await sql`
-    INSERT INTO orders (items, total, method)
-    VALUES (${JSON.stringify(items)}, ${total}, ${method})
+    INSERT INTO orders (items, total, method, staff)
+    VALUES (${JSON.stringify(items)}, ${total}, ${method}, ${staff || null})
     RETURNING id, created_at
   `;
 
