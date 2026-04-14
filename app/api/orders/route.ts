@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { getDb } from "@/lib/db";
 import { validateOrderTotal } from "@/lib/menu";
 import type { PayMethod } from "@/lib/types";
@@ -79,4 +80,24 @@ export async function POST(req: Request) {
   `;
 
   return Response.json({ ok: true, order: result[0] });
+}
+
+export async function DELETE(req: Request) {
+  // Auth check
+  const cookieStore = await cookies();
+  const session = cookieStore.get("pos_session");
+  if (!session) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) {
+    return Response.json({ error: "Missing order id" }, { status: 400 });
+  }
+
+  const sql = getDb();
+  await sql`DELETE FROM orders WHERE id = ${Number(id)}`;
+
+  return Response.json({ ok: true });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import type { MenuItem, Extra, CartItem, PayMethod, Draft } from "@/lib/types";
+import type { MenuItem, Extra, CartItem, PayMethod, Draft, UserSession } from "@/lib/types";
 import {
   MENU,
   CATEGORIES,
@@ -11,18 +11,40 @@ import {
   itemTotal,
 } from "@/lib/menu";
 import { Search, X, ClipboardList, BarChart3, FileText, CategoryIcon } from "@/lib/icons";
+import { LogOut, Loader2 } from "lucide-react";
 import { StatsView } from "./components/StatsView";
 import { HistoryView } from "./components/HistoryView";
 import { CartSheet } from "./components/CartSheet";
 import { PaymentModal } from "./components/PaymentModal";
 import { ExtrasModal } from "./components/ExtrasModal";
-import { PinModal } from "./components/PinModal";
 import { ReceiptView } from "./components/ReceiptView";
 import { DraftsModal } from "./components/DraftsModal";
+import { LoginScreen } from "./components/LoginScreen";
 
 const DRAFTS_KEY = "crepe-pos-drafts";
 
 export default function POS() {
+  // Auth
+  const [user, setUser] = useState<UserSession | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Check session on load
+  useEffect(() => {
+    fetch("/api/auth")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.user) setUser(data.user);
+      })
+      .catch(() => {})
+      .finally(() => setAuthChecked(true));
+  }, []);
+
+  async function handleLogout() {
+    await fetch("/api/auth", { method: "DELETE" });
+    setUser(null);
+  }
+
+  // POS state
   const [view, setView] = useState<"pos" | "stats" | "history">("pos");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [search, setSearch] = useState("");
@@ -39,15 +61,12 @@ export default function POS() {
     method: PayMethod;
     cashGiven?: number;
   } | null>(null);
-  const [pinModal, setPinModal] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
 
   // Drafts
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [showDrafts, setShowDrafts] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
-  // Load drafts from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(DRAFTS_KEY);
@@ -55,7 +74,6 @@ export default function POS() {
     } catch {}
   }, []);
 
-  // Persist drafts to localStorage
   const saveDraftsToStorage = useCallback((next: Draft[]) => {
     setDrafts(next);
     localStorage.setItem(DRAFTS_KEY, JSON.stringify(next));
@@ -66,7 +84,6 @@ export default function POS() {
     const t = cart.reduce((s, i) => s + itemTotal(i), 0);
 
     if (editingDraftId) {
-      // Update existing draft
       const next = drafts.map((d) =>
         d.id === editingDraftId
           ? { ...d, items: [...cart], total: t, created_at: new Date().toISOString() }
@@ -75,7 +92,6 @@ export default function POS() {
       saveDraftsToStorage(next);
       setEditingDraftId(null);
     } else {
-      // Create new draft
       const draft: Draft = {
         id: crypto.randomUUID(),
         items: [...cart],
@@ -174,7 +190,6 @@ export default function POS() {
     setReceipt(r);
     setCart([]);
     setShowPayment(false);
-    // Remove draft if paying from a draft
     if (editingDraftId) {
       saveDraftsToStorage(drafts.filter((d) => d.id !== editingDraftId));
       setEditingDraftId(null);
@@ -189,22 +204,45 @@ export default function POS() {
     setEditingDraftId(null);
   }
 
-  if (view === "stats") {
+  const isAdmin = user?.role === "admin";
+
+  // ── Loading ────────────────────────────────────────────────────────
+  if (!authChecked) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-white">
+        <Loader2 size={24} className="animate-spin text-zinc-400" />
+      </div>
+    );
+  }
+
+  // ── Login ──────────────────────────────────────────────────────────
+  if (!user) {
+    return <LoginScreen onLogin={setUser} />;
+  }
+
+  // ── Sub-views ──────────────────────────────────────────────────────
+  if (view === "stats" && isAdmin) {
     return <StatsView onBack={() => setView("pos")} onHistory={() => setView("history")} />;
   }
   if (view === "history") {
-    return <HistoryView onBack={() => setView("pos")} />;
+    return <HistoryView onBack={() => setView("pos")} canDelete />;
   }
   if (receipt) {
     return <ReceiptView {...receipt} onNewOrder={newOrder} />;
   }
 
+  // ── Main POS ───────────────────────────────────────────────────────
   return (
     <div className="flex h-dvh flex-col bg-white text-zinc-800 lg:flex-row">
       <div className="flex min-h-0 flex-1 flex-col">
-        {/* Header — 44px+ touch targets */}
+        {/* Header */}
         <header className="flex items-center gap-2 border-b border-zinc-100 px-4 py-2.5 pt-safe">
-          <h1 className="text-lg font-semibold text-zinc-900">Crepe House</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold text-zinc-900">Crepe House</h1>
+            <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500">
+              {user.id}
+            </span>
+          </div>
           <div className="relative ml-auto flex-1 max-w-xs">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
@@ -242,21 +280,26 @@ export default function POS() {
           >
             <ClipboardList size={20} />
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => setView("stats")}
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 active:bg-zinc-100"
+              title="Thống kê"
+            >
+              <BarChart3 size={20} />
+            </button>
+          )}
           <button
-            onClick={() => {
-              if (isOwner) setView("stats");
-              else setPinModal(true);
-            }}
-            className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 active:bg-zinc-100"
-            title="Thống kê"
+            onClick={handleLogout}
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-300 active:bg-red-50 active:text-red-500"
+            title="Đăng xuất"
           >
-            <BarChart3 size={20} />
+            <LogOut size={18} />
           </button>
         </header>
 
         {/* Category Sidebar + Menu Grid */}
         <div className="flex min-h-0 flex-1">
-          {/* Left sidebar — always visible, icon + short label */}
           {!search && (
             <div className="flex w-[72px] shrink-0 flex-col gap-1 overflow-y-auto border-r border-zinc-100 bg-zinc-50/50 py-2 px-1.5 scrollbar-hide">
               {CATEGORIES.map((cat) => (
@@ -278,7 +321,6 @@ export default function POS() {
             </div>
           )}
 
-          {/* Menu Grid */}
           <div className="flex-1 overflow-y-auto p-3 pb-28 lg:pb-4">
             {search && displayedItems.length === 0 && (
               <p className="mt-16 text-center text-sm text-zinc-400">Không tìm thấy món nào</p>
@@ -317,7 +359,7 @@ export default function POS() {
         </div>
       </div>
 
-      {/* Floating Cart Button — safe area aware */}
+      {/* Floating Cart Button */}
       {cart.length > 0 && !cartOpen && (
         <button
           onClick={() => setCartOpen(true)}
@@ -368,17 +410,6 @@ export default function POS() {
         />
       )}
 
-      {pinModal && (
-        <PinModal
-          onSuccess={() => {
-            setIsOwner(true);
-            setPinModal(false);
-            setView("stats");
-          }}
-          onClose={() => setPinModal(false)}
-        />
-      )}
-
       {showDrafts && (
         <DraftsModal
           drafts={drafts}
@@ -388,7 +419,6 @@ export default function POS() {
         />
       )}
 
-      {/* Editing draft indicator */}
       {editingDraftId && cart.length > 0 && (
         <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center bg-amber-500 py-1.5 pt-safe text-sm font-medium text-white lg:hidden">
           Đang sửa đơn nháp · Bấm Thanh toán hoặc Lưu lại

@@ -82,9 +82,17 @@ function dateRange(range: string, now: Date, customFrom?: string, customTo?: str
 
 export async function GET(req: Request) {
   const cookieStore = await cookies();
-  const auth = cookieStore.get("owner_auth");
-  if (!auth) {
+  const session = cookieStore.get("pos_session");
+  if (!session) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  try {
+    const user = JSON.parse(session.value);
+    if (user.role !== "admin") {
+      return Response.json({ error: "Admin only" }, { status: 403 });
+    }
+  } catch {
+    return Response.json({ error: "Invalid session" }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);

@@ -3,15 +3,29 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Order } from "@/lib/types";
 import { fmt } from "@/lib/menu";
-import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Loader2 } from "@/lib/icons";
+import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Loader2, Trash2 } from "@/lib/icons";
 
-export function HistoryView({ onBack }: { onBack: () => void }) {
+export function HistoryView({ onBack, canDelete }: { onBack: () => void; canDelete?: boolean }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<number | null>(null);
+
+  async function deleteOrder(id: number) {
+    if (deleting) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/orders?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setOrders((prev) => prev.filter((o) => o.id !== id));
+        setExpanded(null);
+      }
+    } catch {}
+    setDeleting(null);
+  }
 
   const fetchOrders = useCallback(async (p: number) => {
     setLoading(true);
@@ -103,6 +117,20 @@ export function HistoryView({ onBack }: { onBack: () => void }) {
                       <span className="font-medium text-zinc-700">{fmt(item.price * item.qty)}</span>
                     </div>
                   ))}
+                  {canDelete && (
+                    <button
+                      onClick={() => deleteOrder(order.id)}
+                      disabled={deleting === order.id}
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 py-3 text-sm font-medium text-red-500 active:bg-red-50 disabled:opacity-50"
+                    >
+                      {deleting === order.id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                      Xoá đơn hàng
+                    </button>
+                  )}
                 </div>
               )}
             </div>

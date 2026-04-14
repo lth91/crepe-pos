@@ -40,3 +40,9 @@ export type Draft = {
   note: string;
   created_at: string;
 };
+
+export type UserRole = "staff" | "admin";
+export type UserSession = {
+  id: string;
+  role: UserRole;
+};
