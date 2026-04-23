@@ -3,6 +3,7 @@
 import type { CartItem, PayMethod } from "@/lib/types";
 import { fmt, itemTotal } from "@/lib/menu";
 import { CheckCircle2 } from "@/lib/icons";
+import { Printer } from "lucide-react";
 
 type Props = {
   items: CartItem[];
@@ -13,13 +14,27 @@ type Props = {
 };
 
 export function ReceiptView({ items, total, method, cashGiven, onNewOrder }: Props) {
+  function handlePrint() {
+    window.print();
+  }
+
+  const now = new Date();
+  const timeStr = now.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-zinc-50 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-sm">
+    <div className="flex min-h-dvh items-center justify-center bg-zinc-50 p-4 print:bg-white print:p-0 print:min-h-0">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-sm print-receipt print:max-w-none print:rounded-none print:shadow-none print:p-4">
         <div className="mb-6 flex flex-col items-center text-center">
-          <CheckCircle2 size={40} className="mb-2 text-green-500" />
+          <CheckCircle2 size={40} className="mb-2 text-green-500 print:hidden" />
           <h2 className="text-xl font-semibold text-zinc-900">Crepe House</h2>
-          <p className="mt-0.5 text-sm text-green-600 font-medium">Thanh toán thành công</p>
+          <p className="mt-0.5 text-sm text-green-600 font-medium print:hidden">Thanh toán thành công</p>
+          <p className="mt-0.5 hidden text-xs text-zinc-500 print:block">{timeStr}</p>
         </div>
 
         <div className="mb-4 space-y-3">
@@ -65,12 +80,25 @@ export function ReceiptView({ items, total, method, cashGiven, onNewOrder }: Pro
           )}
         </div>
 
-        <button
-          onClick={onNewOrder}
-          className="mt-6 w-full rounded-xl bg-zinc-900 py-4 text-base font-semibold text-white active:bg-zinc-800"
-        >
-          Đơn mới
-        </button>
+        <div className="mt-6 flex gap-2.5 print:hidden">
+          <button
+            onClick={handlePrint}
+            className="flex h-[52px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 text-base font-medium text-zinc-700 active:bg-zinc-50"
+          >
+            <Printer size={18} />
+            In hoá đơn
+          </button>
+          <button
+            onClick={onNewOrder}
+            className="flex-1 rounded-xl bg-zinc-900 py-4 text-base font-semibold text-white active:bg-zinc-800"
+          >
+            Đơn mới
+          </button>
+        </div>
+
+        <p className="mt-4 hidden text-center text-xs text-zinc-400 print:block">
+          Cảm ơn quý khách!
+        </p>
       </div>
     </div>
   );

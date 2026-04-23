@@ -42,3 +42,35 @@ input[type="date"] {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
+
+/* Print styles — receipt-only printing */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+
+  html, body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide everything except the receipt */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible;
+  }
+
+  .print-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    font-size: 12pt;
+    color: black;
+  }
+}
