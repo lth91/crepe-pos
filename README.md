@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Crepe POS
 
-## Getting Started
+Ứng dụng bán hàng (POS) cho quán crepe, chạy trên Next.js 16 + Neon Postgres, tối ưu cho điện thoại.
 
-First, run the development server:
+- `/` — trang Coming Soon
+- `/orderdth` — màn hình POS (yêu cầu đăng nhập)
+
+## Chạy local
 
 ```bash
+npm install
+cp .env.example .env.local   # rồi sửa giá trị bên trong
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mở http://localhost:3000/orderdth.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Lần đầu chạy với database mới, gọi `GET /api/setup` một lần để tạo bảng `orders`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Biến môi trường
 
-## Learn More
+| Biến | Bắt buộc | Mô tả |
+|---|---|---|
+| `DATABASE_URL` | Có | Connection string của Neon Postgres |
+| `POS_ACCOUNTS` | Có | Danh sách tài khoản đăng nhập, xem bên dưới |
 
-To learn more about Next.js, take a look at the following resources:
+### `POS_ACCOUNTS`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Các tài khoản cách nhau bằng dấu phẩy, mỗi tài khoản có dạng `username:password:role`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+POS_ACCOUNTS="nhanvien01:mk-nv-01:staff,nhanvien02:mk-nv-02:staff,admin:mk-admin:admin"
+```
 
-## Deploy on Vercel
+- `role` là `staff` (chỉ bán hàng, xem lịch sử) hoặc `admin` (thêm quyền xem thống kê).
+- Tên đăng nhập không phân biệt hoa thường.
+- Mật khẩu không được chứa dấu `:` hoặc `,`.
+- Nếu biến này trống, không ai đăng nhập được và API trả lỗi 503.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Trên Vercel, đặt các biến này tại **Project → Settings → Environment Variables**, sau đó redeploy.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+```bash
+npm run dev     # chạy dev server
+npm run build   # build production
+npm run start   # chạy bản build
+npm run lint    # eslint
+```

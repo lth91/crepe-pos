@@ -3,13 +3,54 @@ import type { UserRole } from "@/lib/types";
 
 type Account = { password: string; role: UserRole };
 
-const ACCOUNTS: Record<string, Account> = {
-  nhanvien01: { password: "nv01dth", role: "staff" },
-  nhanvien02: { password: "nv02dth", role: "staff" },
-  nhanvien03: { password: "nv03dth", role: "staff" },
-  nhanvien04: { password: "nv04dth", role: "staff" },
-  admin: { password: "admindth11", role: "admin" },
-};
+const VALID_ROLES: UserRole[] = ["staff", "admin"];
+
+/**
+ * Accounts are read from the POS_ACCOUNTS environment variable.
+ *
+ * Format: comma-separated entries of `username:password:role`
+ *   POS_ACCOUNTS="nhanvien01:secret1:staff,admin:secret2:admin"
+ *
+ * Role must be "staff" or "admin". Usernames are case-insensitive.
+ * Passwords may not contain ":" or ",".
+ */
+let cached: { raw: string | undefined; accounts: Record<string, Account> } | null = null;
+
+function loadAccounts(): Record<string, Account> {
+  const raw = process.env.POS_ACCOUNTS;
+  if (cached && cached.raw === raw) return cached.accounts;
+
+  const accounts = parseAccounts(raw);
+  cached = { raw, accounts };
+  return accounts;
+}
+
+function parseAccounts(raw: string | undefined): Record<string, Account> {
+  if (!raw) return {};
+
+  const accounts: Record<string, Account> = {};
+
+  for (const entry of raw.split(",")) {
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+
+    const parts = trimmed.split(":");
+    if (parts.length !== 3) {
+      console.warn(`POS_ACCOUNTS: skipping malformed entry (expected username:password:role)`);
+      continue;
+    }
+
+    const [username, password, role] = parts.map((p) => p.trim());
+    if (!username || !password || !VALID_ROLES.includes(role as UserRole)) {
+      console.warn(`POS_ACCOUNTS: skipping invalid entry for "${username}"`);
+      continue;
+    }
+
+    accounts[username.toLowerCase()] = { password, role: role as UserRole };
+  }
+
+  return accounts;
+}
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -21,12 +62,22 @@ export async function POST(req: Request) {
     return Response.json({ error: "Thiếu tài khoản hoặc mật khẩu" }, { status: 400 });
   }
 
-  const account = ACCOUNTS[username.toLowerCase()];
+  const accounts = loadAccounts();
+  if (Object.keys(accounts).length === 0) {
+    console.error("POS_ACCOUNTS is not configured; no one can log in");
+    return Response.json(
+      { error: "Hệ thống chưa cấu hình tài khoản, vui lòng liên hệ quản trị" },
+      { status: 503 }
+    );
+  }
+
+  const id = username.toLowerCase();
+  const account = accounts[id];
   if (!account || account.password !== password) {
     return Response.json({ error: "Sai tài khoản hoặc mật khẩu" }, { status: 401 });
   }
 
-  const session = JSON.stringify({ id: username.toLowerCase(), role: account.role });
+  const session = JSON.stringify({ id, role: account.role });
 
   const cookieStore = await cookies();
   cookieStore.set("pos_session", session, {
@@ -36,7 +87,7 @@ export async function POST(req: Request) {
     maxAge: 60 * 60 * 12, // 12 hours
   });
 
-  return Response.json({ ok: true, user: { id: username.toLowerCase(), role: account.role } });
+  return Response.json({ ok: true, user: { id, role: account.role } });
 }
 
 export async function DELETE() {
