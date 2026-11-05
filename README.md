@@ -26,15 +26,16 @@ Lần đầu chạy với database mới, gọi `GET /api/setup` một lần đ�
 
 ### `POS_ACCOUNTS`
 
-Các tài khoản cách nhau bằng dấu phẩy, mỗi tài khoản có dạng `username:password:role`:
+Các tài khoản cách nhau bằng dấu phẩy, dấu chấm phẩy hoặc xuống dòng. Mỗi tài khoản có dạng `username:password:role`:
 
 ```
 POS_ACCOUNTS="nhanvien01:mk-nv-01:staff,nhanvien02:mk-nv-02:staff,admin:mk-admin:admin"
 ```
 
+- Dấu ngoặc kép bao quanh giá trị và khoảng trắng thừa được bỏ qua.
 - `role` là `staff` (chỉ bán hàng, xem lịch sử) hoặc `admin` (thêm quyền xem thống kê).
 - Tên đăng nhập không phân biệt hoa thường.
-- Mật khẩu không được chứa dấu `:` hoặc `,`.
+- Mật khẩu không được chứa dấu `:`, `,` hoặc `;`.
 - Nếu biến này trống, không ai đăng nhập được và API trả lỗi 503.
 
 Trên Vercel, đặt các biến này tại **Project → Settings → Environment Variables**, sau đó redeploy.

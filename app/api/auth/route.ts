@@ -1,54 +1,15 @@
 import { cookies } from "next/headers";
-import type { UserRole } from "@/lib/types";
+import { parseAccounts, type Account } from "@/lib/accounts";
 
-type Account = { password: string; role: UserRole };
-
-const VALID_ROLES: UserRole[] = ["staff", "admin"];
-
-/**
- * Accounts are read from the POS_ACCOUNTS environment variable.
- *
- * Format: comma-separated entries of `username:password:role`
- *   POS_ACCOUNTS="nhanvien01:secret1:staff,admin:secret2:admin"
- *
- * Role must be "staff" or "admin". Usernames are case-insensitive.
- * Passwords may not contain ":" or ",".
- */
 let cached: { raw: string | undefined; accounts: Record<string, Account> } | null = null;
 
+/** Accounts come from the POS_ACCOUNTS env var; see lib/accounts.ts for the format. */
 function loadAccounts(): Record<string, Account> {
   const raw = process.env.POS_ACCOUNTS;
   if (cached && cached.raw === raw) return cached.accounts;
 
   const accounts = parseAccounts(raw);
   cached = { raw, accounts };
-  return accounts;
-}
-
-function parseAccounts(raw: string | undefined): Record<string, Account> {
-  if (!raw) return {};
-
-  const accounts: Record<string, Account> = {};
-
-  for (const entry of raw.split(",")) {
-    const trimmed = entry.trim();
-    if (!trimmed) continue;
-
-    const parts = trimmed.split(":");
-    if (parts.length !== 3) {
-      console.warn(`POS_ACCOUNTS: skipping malformed entry (expected username:password:role)`);
-      continue;
-    }
-
-    const [username, password, role] = parts.map((p) => p.trim());
-    if (!username || !password || !VALID_ROLES.includes(role as UserRole)) {
-      console.warn(`POS_ACCOUNTS: skipping invalid entry for "${username}"`);
-      continue;
-    }
-
-    accounts[username.toLowerCase()] = { password, role: role as UserRole };
-  }
-
   return accounts;
 }
 
