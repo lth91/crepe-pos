@@ -51,7 +51,6 @@ export const MENU: Record<string, MenuItem[]> = {
     { name: "Trà Vải", price: 35000 },
     { name: "Trà Dâu", price: 35000 },
     { name: "Trà Đào Cam Sả", price: 45000 },
-    { name: "Nước Ngọt Chai", price: 20000 },
     { name: "Nước Ngọt Lon", price: 20000 },
     { name: "Nước Suối", price: 10000 },
     { name: "Nước Suối To", price: 20000 },
