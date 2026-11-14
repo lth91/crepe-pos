@@ -308,6 +308,25 @@ export function StatsView({
               </div>
             </div>
 
+            {/* Shifts */}
+            <div className="px-4 py-4">
+              <SectionLabel>Theo ca</SectionLabel>
+              <div className="mt-2 grid grid-cols-2 gap-2.5">
+                <ShiftCard
+                  label="Ca sáng"
+                  hours="7h – 19h"
+                  data={data.shifts?.find((x) => x.shift === "morning")}
+                  total={Number(data.summary.revenue)}
+                />
+                <ShiftCard
+                  label="Ca tối"
+                  hours="19h – 7h sáng"
+                  data={data.shifts?.find((x) => x.shift === "evening")}
+                  total={Number(data.summary.revenue)}
+                />
+              </div>
+            </div>
+
             {/* Hourly */}
             {data.hourly.length > 0 && (
               <div className="px-4 py-4">
@@ -382,12 +401,38 @@ function PayItem({ label, amount, count, dot }: { label: string; amount: number;
   );
 }
 
+function ShiftCard({
+  label,
+  hours,
+  data,
+  total,
+}: {
+  label: string;
+  hours: string;
+  data?: StatsData["shifts"][number];
+  total: number;
+}) {
+  const revenue = Number(data?.revenue ?? 0);
+  return (
+    <div className="rounded-xl border border-zinc-100 p-3.5">
+      <p className="text-sm font-medium text-zinc-700">{label}</p>
+      <p className="text-xs text-zinc-400">{hours}</p>
+      <p className="mt-2 text-lg font-semibold text-zinc-900">{fmt(revenue)}</p>
+      <p className="text-xs text-zinc-400">
+        {data?.order_count ?? 0} đơn · {pct(revenue, total)}%
+      </p>
+    </div>
+  );
+}
+
 function HourlyChart({ hourly }: { hourly: StatsData["hourly"] }) {
   const maxRev = Math.max(...hourly.map(h => Number(h.revenue)), 1);
+  // Working-day order: 7h, 8h, ... 23h, 0h, ... 6h (Vietnam time)
   const hours = Array.from({ length: 24 }, (_, i) => {
-    const found = hourly.find(h => h.hour === i);
-    return { hour: i, revenue: found ? Number(found.revenue) : 0, orders: found ? found.order_count : 0 };
-  }).filter(h => h.hour >= 7 && h.hour <= 23);
+    const hour = (i + 7) % 24;
+    const found = hourly.find(h => h.hour === hour);
+    return { hour, revenue: found ? Number(found.revenue) : 0, orders: found ? found.order_count : 0 };
+  });
 
   return (
     <div className="mt-3">
@@ -395,7 +440,7 @@ function HourlyChart({ hourly }: { hourly: StatsData["hourly"] }) {
         {hours.map(h => {
           const height = maxRev > 0 ? (h.revenue / maxRev) * 100 : 0;
           return (
-            <div key={h.hour} className="group relative flex flex-1 flex-col items-center">
+            <div key={h.hour} className="group relative flex h-full flex-1 flex-col items-center justify-end">
               <div
                 className={`w-full rounded-sm transition-all ${h.revenue > 0 ? "bg-zinc-800 group-hover:bg-zinc-600" : "bg-zinc-100"}`}
                 style={{ height: `${Math.max(height, 2)}%` }}

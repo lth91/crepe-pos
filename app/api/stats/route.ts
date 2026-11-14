@@ -1,83 +1,67 @@
 import { cookies } from "next/headers";
 import { getDb } from "@/lib/db";
+import {
+  businessDateOf,
+  businessDayStart,
+  businessDayStartFromString,
+  DAY_START_HOUR,
+  EVENING_SHIFT_START_HOUR,
+} from "@/lib/business-day";
 
+/**
+ * Date ranges use working days (07:00 to 07:00 Vietnam time), so the evening
+ * shift's after-midnight sales count toward the day it started.
+ */
 function dateRange(range: string, now: Date, customFrom?: string, customTo?: string) {
-  let start: string;
-  let end: string;
-  let prevStart: string;
-  let prevEnd: string;
+  const today = businessDateOf(now);
+  const day = (offset: number) => businessDayStart(today.y, today.m, today.d + offset);
 
-  if (range === "custom" && customFrom) {
-    const from = new Date(customFrom);
-    from.setHours(0, 0, 0, 0);
-    start = from.toISOString();
+  let start: Date;
+  let end: Date;
+  let prevStart: Date;
+  let prevEnd: Date;
 
-    if (customTo) {
-      const to = new Date(customTo);
-      to.setHours(23, 59, 59, 999);
-      end = to.toISOString();
-    } else {
-      // Single day
-      const to = new Date(from);
-      to.setDate(from.getDate() + 1);
-      end = to.toISOString();
-    }
+  const fromDay = customFrom ? businessDayStartFromString(customFrom) : null;
 
+  if (range === "custom" && fromDay) {
+    start = fromDay;
+    const toDay = customTo ? businessDayStartFromString(customTo) : null;
+    // `to` is inclusive: the range ends when the day after it starts
+    end = new Date((toDay ?? fromDay).getTime() + 86_400_000);
     // Previous period = same duration before start
-    const durationMs = new Date(end).getTime() - new Date(start).getTime();
-    const prevEndDate = new Date(start);
-    const prevStartDate = new Date(prevEndDate.getTime() - durationMs);
-    prevStart = prevStartDate.toISOString();
-    prevEnd = prevEndDate.toISOString();
+    const durationMs = end.getTime() - start.getTime();
+    prevEnd = start;
+    prevStart = new Date(start.getTime() - durationMs);
   } else if (range === "yesterday") {
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-    start = yesterday.toISOString();
-    end = today.toISOString();
-    // Compare with day before yesterday
-    const dayBefore = new Date(yesterday);
-    dayBefore.setDate(yesterday.getDate() - 1);
-    prevStart = dayBefore.toISOString();
+    start = day(-1);
+    end = day(0);
+    prevStart = day(-2);
     prevEnd = start;
   } else if (range === "week") {
-    const day = now.getDay();
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - ((day + 6) % 7));
-    mon.setHours(0, 0, 0, 0);
-    const sun = new Date(mon);
-    sun.setDate(mon.getDate() + 7);
-    start = mon.toISOString();
-    end = sun.toISOString();
-    const prevMon = new Date(mon);
-    prevMon.setDate(mon.getDate() - 7);
-    prevStart = prevMon.toISOString();
+    const sinceMonday = (today.weekday + 6) % 7;
+    start = day(-sinceMonday);
+    end = day(7 - sinceMonday);
+    prevStart = day(-sinceMonday - 7);
     prevEnd = start;
   } else if (range === "month") {
-    const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    const last = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    start = first.toISOString();
-    end = last.toISOString();
-    const prevFirst = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    prevStart = prevFirst.toISOString();
+    start = businessDayStart(today.y, today.m, 1);
+    end = businessDayStart(today.y, today.m + 1, 1);
+    prevStart = businessDayStart(today.y, today.m - 1, 1);
     prevEnd = start;
   } else {
     // today
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    start = today.toISOString();
-    end = tomorrow.toISOString();
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    prevStart = yesterday.toISOString();
+    start = day(0);
+    end = day(1);
+    prevStart = day(-1);
     prevEnd = start;
   }
 
-  return { start, end, prevStart: prevStart!, prevEnd: prevEnd! };
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+    prevStart: prevStart.toISOString(),
+    prevEnd: prevEnd.toISOString(),
+  };
 }
 
 export async function GET(req: Request) {
@@ -103,7 +87,7 @@ export async function GET(req: Request) {
   const now = new Date();
   const { start, end, prevStart, prevEnd } = dateRange(range, now, customFrom, customTo);
 
-  const [summary, prevSummary, daily, hourly, topItems, categoryBreakdown, paymentCounts] =
+  const [summary, prevSummary, daily, hourly, shifts, topItems, categoryBreakdown, paymentCounts] =
     await Promise.all([
       sql`
         SELECT
@@ -127,24 +111,38 @@ export async function GET(req: Request) {
       `,
       sql`
         SELECT
-          created_at::date AS date,
+          ((created_at AT TIME ZONE 'Asia/Ho_Chi_Minh') - make_interval(hours => ${DAY_START_HOUR}))::date AS date,
           COUNT(*)::int AS order_count,
           SUM(total)::bigint AS revenue
         FROM orders
         WHERE created_at >= ${start} AND created_at < ${end}
-        GROUP BY created_at::date
+        GROUP BY 1
         ORDER BY date ASC
         LIMIT 90
       `,
       sql`
         SELECT
-          EXTRACT(HOUR FROM created_at)::int AS hour,
+          EXTRACT(HOUR FROM created_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::int AS hour,
           COUNT(*)::int AS order_count,
           SUM(total)::bigint AS revenue
         FROM orders
         WHERE created_at >= ${start} AND created_at < ${end}
-        GROUP BY EXTRACT(HOUR FROM created_at)
+        GROUP BY 1
         ORDER BY hour
+      `,
+      sql`
+        SELECT
+          CASE
+            WHEN EXTRACT(HOUR FROM created_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::int >= ${DAY_START_HOUR}::int
+             AND EXTRACT(HOUR FROM created_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::int < ${EVENING_SHIFT_START_HOUR}::int
+            THEN 'morning'
+            ELSE 'evening'
+          END AS shift,
+          COUNT(*)::int AS order_count,
+          COALESCE(SUM(total), 0)::bigint AS revenue
+        FROM orders
+        WHERE created_at >= ${start} AND created_at < ${end}
+        GROUP BY 1
       `,
       sql`
         SELECT
@@ -184,6 +182,7 @@ export async function GET(req: Request) {
     prevSummary: prevSummary[0],
     daily,
     hourly,
+    shifts,
     topItems,
     categoryBreakdown,
     paymentCounts,

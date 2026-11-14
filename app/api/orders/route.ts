@@ -48,13 +48,14 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const sql = getDb();
 
-  // Today's numbered orders (Vietnam time), oldest first, for the kitchen view.
+  // Numbered orders of the current working day (from 07:00 Vietnam time), oldest first,
+  // for the kitchen view.
   // Orders from before numbering existed are skipped so they don't show as pending.
   if (searchParams.get("view") === "today") {
     const rows = await sql`
       SELECT id, order_no, items, total, method, staff, done, created_at
       FROM orders
-      WHERE created_at >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh')
+      WHERE created_at >= ((date_trunc('day', (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - interval '7 hours') + interval '7 hours') AT TIME ZONE 'Asia/Ho_Chi_Minh')
         AND order_no IS NOT NULL
       ORDER BY created_at ASC
     `;
@@ -143,7 +144,7 @@ export async function POST(req: Request) {
         (
           SELECT COALESCE(MAX(order_no), 0) + 1
           FROM orders
-          WHERE created_at >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh')
+          WHERE created_at >= ((date_trunc('day', (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - interval '7 hours') + interval '7 hours') AT TIME ZONE 'Asia/Ho_Chi_Minh')
         )
       )
       RETURNING id, order_no, created_at

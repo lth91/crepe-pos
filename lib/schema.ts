@@ -21,7 +21,7 @@ export function ensureSchema(): Promise<void> {
         )
       `;
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS staff TEXT`;
-      // Daily order number, restarting at 1 each day (Vietnam time)
+      // Order number, restarting at 1 each working day (07:00 Vietnam time)
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_no INTEGER`;
       // Indexes into `items` that the kitchen has ticked as made
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS done JSONB NOT NULL DEFAULT '[]'::jsonb`;

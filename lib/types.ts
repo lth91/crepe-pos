@@ -26,6 +26,8 @@ export type StatsData = {
   };
   daily: { date: string; order_count: number; revenue: number }[];
   hourly: { hour: number; order_count: number; revenue: number }[];
+  /** Sales split by shift: morning 07:00–19:00, evening 19:00–07:00 */
+  shifts: { shift: "morning" | "evening"; order_count: number; revenue: number }[];
   topItems: { name: string; qty: number; revenue: number }[];
   categoryBreakdown: { name: string; qty: number; revenue: number }[];
   paymentCounts: { method: string; count: number }[];
