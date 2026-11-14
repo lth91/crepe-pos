@@ -24,6 +24,15 @@ import { KitchenView } from "./components/KitchenView";
 
 const DRAFTS_KEY = "crepe-pos-drafts";
 
+type View = "pos" | "stats" | "history" | "kitchen";
+const VIEWS: View[] = ["pos", "stats", "history", "kitchen"];
+
+function readViewFromUrl(): View {
+  if (typeof window === "undefined") return "pos";
+  const v = new URLSearchParams(window.location.search).get("view");
+  return VIEWS.includes(v as View) ? (v as View) : "pos";
+}
+
 export default function POS() {
   // Auth
   const [user, setUser] = useState<UserSession | null>(null);
@@ -46,7 +55,21 @@ export default function POS() {
   }
 
   // POS state
-  const [view, setView] = useState<"pos" | "stats" | "history" | "kitchen">("pos");
+  // The open screen lives in the URL (?view=kitchen) so a reload stays on it
+  const [view, setViewState] = useState<View>(readViewFromUrl);
+
+  const setView = useCallback((next: View) => {
+    setViewState(next);
+    const url = next === "pos" ? window.location.pathname : `?view=${next}`;
+    window.history.pushState(null, "", url);
+  }, []);
+
+  // Phone/browser back button returns to the previous screen
+  useEffect(() => {
+    const onPop = () => setViewState(readViewFromUrl());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
