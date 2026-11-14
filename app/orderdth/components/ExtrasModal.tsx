@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import type { MenuItem, Extra } from "@/lib/types";
-import { fmt } from "@/lib/menu";
+import { fmt, NOTE_MAX_LENGTH } from "@/lib/menu";
 
 type Props = {
   item: MenuItem;
   availableExtras: Extra[];
-  onConfirm: (item: MenuItem, extras?: Extra[]) => void;
+  onConfirm: (item: MenuItem, extras?: Extra[], note?: string) => void;
   onClose: () => void;
 };
 
 export function ExtrasModal({ item, availableExtras, onConfirm, onClose }: Props) {
   const [selectedExtras, setSelectedExtras] = useState<Extra[]>([]);
+  const [note, setNote] = useState("");
 
   function toggleExtra(extra: Extra) {
     setSelectedExtras((prev) =>
@@ -23,7 +24,7 @@ export function ExtrasModal({ item, availableExtras, onConfirm, onClose }: Props
   }
 
   function handleConfirm() {
-    onConfirm(item, selectedExtras.length > 0 ? [...selectedExtras] : undefined);
+    onConfirm(item, selectedExtras.length > 0 ? [...selectedExtras] : undefined, note);
   }
 
   return (
@@ -67,6 +68,15 @@ export function ExtrasModal({ item, availableExtras, onConfirm, onClose }: Props
             </span>
           </div>
         )}
+
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={NOTE_MAX_LENGTH}
+          placeholder="Ghi chú: khách nào, bàn mấy..."
+          className="mb-4 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-base text-zinc-700 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
+        />
 
         <div className="flex gap-2.5 pb-safe">
           <button

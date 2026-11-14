@@ -15,6 +15,7 @@ type Props = {
     total: number;
     method: PayMethod;
     cashGiven?: number;
+    orderNo?: number;
   }) => void;
 };
 
@@ -42,6 +43,7 @@ export function PaymentModal({ cart, total, staffId, onClose, onSuccess }: Props
             qty: i.qty,
             extras: i.extras,
             cartKey: i.cartKey,
+            note: i.note?.trim() || undefined,
           })),
           total,
           method: payMethod,
@@ -54,7 +56,9 @@ export function PaymentModal({ cart, total, staffId, onClose, onSuccess }: Props
         throw new Error(data.error || "Không thể lưu đơn hàng");
       }
 
+      const data = await res.json().catch(() => ({}));
       onSuccess({
+        orderNo: data.order?.order_no ?? undefined,
         items: [...cart],
         total,
         method: payMethod,

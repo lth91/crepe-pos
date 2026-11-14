@@ -1,6 +1,12 @@
 export type MenuItem = { name: string; price: number };
 export type Extra = { name: string; price: number };
-export type CartItem = MenuItem & { qty: number; extras?: Extra[]; cartKey: string };
+export type CartItem = MenuItem & {
+  qty: number;
+  extras?: Extra[];
+  cartKey: string;
+  /** Free text from staff, e.g. which customer or table the item is for */
+  note?: string;
+};
 export type PayMethod = "cash" | "transfer" | "card";
 
 export type StatsData = {
@@ -27,7 +33,11 @@ export type StatsData = {
 
 export type Order = {
   id: number;
+  /** Daily order number; null for orders created before numbering existed */
+  order_no: number | null;
   items: CartItem[];
+  /** Indexes into `items` that have been ticked as made */
+  done: number[];
   total: number;
   method: PayMethod;
   staff: string | null;

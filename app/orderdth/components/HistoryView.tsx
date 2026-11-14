@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { Order } from "@/lib/types";
-import { fmt } from "@/lib/menu";
+import { fmt, itemTotal } from "@/lib/menu";
 import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Loader2, Trash2 } from "@/lib/icons";
 
 export function HistoryView({ onBack, canDelete }: { onBack: () => void; canDelete?: boolean }) {
@@ -93,7 +93,12 @@ export function HistoryView({ onBack, canDelete }: { onBack: () => void; canDele
                 className="flex w-full items-center justify-between p-4 text-left active:bg-zinc-50"
               >
                 <div>
-                  <p className="text-sm text-zinc-500">{fmtTime(order.created_at)}</p>
+                  <p className="text-sm text-zinc-500">
+                    {order.order_no != null && (
+                      <span className="mr-1.5 font-semibold text-zinc-800">#{order.order_no}</span>
+                    )}
+                    {fmtTime(order.created_at)}
+                  </p>
                   <p className="text-sm text-zinc-400">
                     {order.items.length} món · {methodLabel(order.method)}
                     {order.staff && <> · <span className="text-zinc-500 font-medium">{order.staff}</span></>}
@@ -111,11 +116,17 @@ export function HistoryView({ onBack, canDelete }: { onBack: () => void; canDele
               {expanded === order.id && (
                 <div className="border-t border-zinc-50 bg-zinc-50/50 px-4 pb-3.5 pt-3 space-y-1.5">
                   {order.items.map((item, idx) => (
-                    <div key={`${item.name}-${idx}`} className="flex justify-between text-sm">
-                      <span className="text-zinc-600">
-                        {item.name} <span className="text-zinc-400">x{item.qty}</span>
-                      </span>
-                      <span className="font-medium text-zinc-700">{fmt(item.price * item.qty)}</span>
+                    <div key={`${item.name}-${idx}`} className="text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-zinc-600">
+                          {item.name} <span className="text-zinc-400">x{item.qty}</span>
+                        </span>
+                        <span className="font-medium text-zinc-700">{fmt(itemTotal(item))}</span>
+                      </div>
+                      {item.extras && item.extras.length > 0 && (
+                        <p className="text-zinc-400">+ {item.extras.map((e) => e.name).join(", ")}</p>
+                      )}
+                      {item.note && <p className="font-medium text-amber-700">Ghi chú: {item.note}</p>}
                     </div>
                   ))}
                   {canDelete && (

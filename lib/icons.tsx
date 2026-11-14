@@ -26,6 +26,10 @@ import {
   FileText,
   Pencil,
   Clock,
+  ChefHat,
+  Circle,
+  CircleCheck,
+  StickyNote,
 } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 
@@ -52,6 +56,10 @@ export {
   FileText,
   Pencil,
   Clock,
+  ChefHat,
+  Circle,
+  CircleCheck,
+  StickyNote,
 };
 
 // Category icons as React components

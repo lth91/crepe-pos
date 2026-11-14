@@ -10,7 +10,7 @@ import {
   makeCartKey,
   itemTotal,
 } from "@/lib/menu";
-import { Search, X, ClipboardList, BarChart3, FileText, CategoryIcon } from "@/lib/icons";
+import { Search, X, ClipboardList, BarChart3, FileText, ChefHat, CategoryIcon } from "@/lib/icons";
 import { LogOut, Loader2 } from "lucide-react";
 import { StatsView } from "./components/StatsView";
 import { HistoryView } from "./components/HistoryView";
@@ -20,6 +20,7 @@ import { ExtrasModal } from "./components/ExtrasModal";
 import { ReceiptView } from "./components/ReceiptView";
 import { DraftsModal } from "./components/DraftsModal";
 import { LoginScreen } from "./components/LoginScreen";
+import { KitchenView } from "./components/KitchenView";
 
 const DRAFTS_KEY = "crepe-pos-drafts";
 
@@ -45,7 +46,7 @@ export default function POS() {
   }
 
   // POS state
-  const [view, setView] = useState<"pos" | "stats" | "history">("pos");
+  const [view, setView] = useState<"pos" | "stats" | "history" | "kitchen">("pos");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -60,6 +61,7 @@ export default function POS() {
     total: number;
     method: PayMethod;
     cashGiven?: number;
+    orderNo?: number;
   } | null>(null);
 
   // Drafts
@@ -150,17 +152,27 @@ export default function POS() {
     }
   }
 
-  function addToCart(item: MenuItem, extras?: Extra[]) {
-    const key = makeCartKey(item.name, extras);
+  function addToCart(item: MenuItem, extras?: Extra[], note?: string) {
+    const base = makeCartKey(item.name, extras);
+    const cleanNote = note?.trim() || undefined;
     setCart((prev) => {
-      const idx = prev.findIndex((c) => c.cartKey === key);
+      // Merge only into a line with the same item, toppings and note,
+      // so items for different customers stay on separate lines.
+      const idx = prev.findIndex(
+        (c) => makeCartKey(c.name, c.extras) === base && (c.note?.trim() || "") === (cleanNote || "")
+      );
       if (idx >= 0) {
         const next = [...prev];
         next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
         return next;
       }
-      return [...prev, { ...item, qty: 1, extras, cartKey: key }];
+      const cartKey = `${base}#${crypto.randomUUID().slice(0, 8)}`;
+      return [...prev, { ...item, qty: 1, extras, cartKey, note: cleanNote }];
     });
+  }
+
+  function updateNote(key: string, note: string) {
+    setCart((prev) => prev.map((c) => (c.cartKey === key ? { ...c, note } : c)));
   }
 
   function updateQty(key: string, delta: number) {
@@ -186,6 +198,7 @@ export default function POS() {
     total: number;
     method: PayMethod;
     cashGiven?: number;
+    orderNo?: number;
   }) {
     setReceipt(r);
     setCart([]);
@@ -223,6 +236,9 @@ export default function POS() {
   // ── Sub-views ──────────────────────────────────────────────────────
   if (view === "stats" && isAdmin) {
     return <StatsView onBack={() => setView("pos")} onHistory={() => setView("history")} />;
+  }
+  if (view === "kitchen") {
+    return <KitchenView onBack={() => setView("pos")} />;
   }
   if (view === "history") {
     return <HistoryView onBack={() => setView("pos")} canDelete />;
@@ -272,6 +288,13 @@ export default function POS() {
                 {drafts.length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setView("kitchen")}
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 active:bg-zinc-100"
+            title="Đơn đang làm"
+          >
+            <ChefHat size={20} />
           </button>
           <button
             onClick={() => setView("history")}
@@ -384,6 +407,7 @@ export default function POS() {
         itemCount={itemCount}
         updateQty={updateQty}
         removeItem={removeItem}
+        updateNote={updateNote}
         clearCart={() => setCart([])}
         openPayment={openPayment}
         onSaveDraft={saveDraft}
@@ -393,8 +417,8 @@ export default function POS() {
         <ExtrasModal
           item={extrasModal.item}
           availableExtras={extrasModal.availableExtras}
-          onConfirm={(item, extras) => {
-            addToCart(item, extras);
+          onConfirm={(item, extras, note) => {
+            addToCart(item, extras, note);
             setExtrasModal(null);
           }}
           onClose={() => setExtrasModal(null)}

@@ -10,10 +10,11 @@ type Props = {
   total: number;
   method: PayMethod;
   cashGiven?: number;
+  orderNo?: number;
   onNewOrder: () => void;
 };
 
-export function ReceiptView({ items, total, method, cashGiven, onNewOrder }: Props) {
+export function ReceiptView({ items, total, method, cashGiven, orderNo, onNewOrder }: Props) {
   function handlePrint() {
     window.print();
   }
@@ -35,6 +36,12 @@ export function ReceiptView({ items, total, method, cashGiven, onNewOrder }: Pro
           <h2 className="text-xl font-semibold text-zinc-900">Crepe House</h2>
           <p className="mt-0.5 text-sm text-green-600 font-medium print:hidden">Thanh toán thành công</p>
           <p className="mt-0.5 hidden text-xs text-zinc-500 print:block">{timeStr}</p>
+          {orderNo != null && (
+            <div className="mt-3 rounded-xl bg-zinc-900 px-5 py-2 text-white print:bg-white print:text-black print:border print:border-black">
+              <span className="text-sm font-medium">Số </span>
+              <span className="text-3xl font-bold">{orderNo}</span>
+            </div>
+          )}
         </div>
 
         <div className="mb-4 space-y-3">
@@ -50,6 +57,9 @@ export function ReceiptView({ items, total, method, cashGiven, onNewOrder }: Pro
                 <p className="text-sm text-zinc-400 ml-0.5">
                   + {item.extras.map((e) => e.name).join(", ")}
                 </p>
+              )}
+              {item.note && (
+                <p className="text-sm font-medium text-amber-700 ml-0.5">Ghi chú: {item.note}</p>
               )}
             </div>
           ))}

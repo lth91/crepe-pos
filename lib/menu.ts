@@ -118,6 +118,8 @@ export function fmt(n: number) {
   return n.toLocaleString("vi-VN") + "\u0111";
 }
 
+export const NOTE_MAX_LENGTH = 80;
+
 export function makeCartKey(name: string, extras?: Extra[]) {
   if (!extras || extras.length === 0) return name;
   return name + " + " + extras.map((e) => e.name).sort().join(", ");

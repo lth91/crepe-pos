@@ -1,7 +1,7 @@
 "use client";
 
 import type { CartItem } from "@/lib/types";
-import { fmt, itemUnitPrice } from "@/lib/menu";
+import { fmt, itemUnitPrice, NOTE_MAX_LENGTH } from "@/lib/menu";
 import { X, Minus, Plus, Trash2, Save } from "@/lib/icons";
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
   itemCount: number;
   updateQty: (key: string, delta: number) => void;
   removeItem: (key: string) => void;
+  updateNote: (key: string, note: string) => void;
   clearCart: () => void;
   openPayment: () => void;
   onSaveDraft: () => void;
@@ -25,6 +26,7 @@ export function CartSheet({
   itemCount,
   updateQty,
   removeItem,
+  updateNote,
   clearCart,
   openPayment,
   onSaveDraft,
@@ -78,10 +80,8 @@ export function CartSheet({
           ) : (
             <div className="space-y-2">
               {cart.map((item) => (
-                <div
-                  key={item.cartKey}
-                  className="flex items-center gap-3 rounded-xl border border-zinc-100 p-3"
-                >
+                <div key={item.cartKey} className="rounded-xl border border-zinc-100 p-3">
+                <div className="flex items-center gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-medium text-zinc-800">{item.name}</p>
                     {item.extras && item.extras.length > 0 && (
@@ -112,6 +112,15 @@ export function CartSheet({
                   >
                     <Trash2 size={16} />
                   </button>
+                </div>
+                <input
+                  type="text"
+                  value={item.note ?? ""}
+                  onChange={(e) => updateNote(item.cartKey, e.target.value)}
+                  maxLength={NOTE_MAX_LENGTH}
+                  placeholder="Ghi chú: khách nào, bàn mấy..."
+                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-base text-zinc-700 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
+                />
                 </div>
               ))}
             </div>
