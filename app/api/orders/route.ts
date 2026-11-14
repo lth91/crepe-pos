@@ -153,25 +153,56 @@ export async function POST(req: Request) {
   return Response.json({ ok: true, order: inserted[0] });
 }
 
-/** Tick or untick one item of an order as made. Body: { id, index, done }. */
+/**
+ * Update one item of an order. Body: { id, index } plus either
+ * `done` (tick or untick it as made) or `note` (replace its note; "" removes it).
+ */
 export async function PATCH(req: Request) {
   if (!(await isLoggedIn())) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = (await req.json().catch(() => null)) as
-    | { id?: unknown; index?: unknown; done?: unknown }
+    | { id?: unknown; index?: unknown; done?: unknown; note?: unknown }
     | null;
   const id = Number(body?.id);
   const index = Number(body?.index);
   const done = body?.done;
+  const note = body?.note;
 
-  if (!Number.isInteger(id) || !Number.isInteger(index) || index < 0 || typeof done !== "boolean") {
+  if (
+    !Number.isInteger(id) ||
+    !Number.isInteger(index) ||
+    index < 0 ||
+    (typeof done !== "boolean" && typeof note !== "string")
+  ) {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
 
   await ensureSchema();
   const sql = getDb();
+
+  if (typeof note === "string") {
+    const clean = note.trim().slice(0, NOTE_MAX_LENGTH);
+    const rows = await sql`
+      UPDATE orders
+      SET items = jsonb_set(
+        items,
+        ARRAY[${index}::int::text],
+        CASE
+          WHEN ${clean}::text = '' THEN (items -> ${index}::int) - 'note'
+          ELSE jsonb_set(items -> ${index}::int, '{note}', to_jsonb(${clean}::text))
+        END
+      )
+      WHERE id = ${id} AND ${index}::int < jsonb_array_length(items)
+      RETURNING id, items
+    `;
+    if (rows.length === 0) {
+      return Response.json({ error: "Order or item not found" }, { status: 404 });
+    }
+    return Response.json({ ok: true, items: rows[0].items });
+  }
+
   const rows = await sql`
     UPDATE orders
     SET done = CASE

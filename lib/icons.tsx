@@ -30,6 +30,7 @@ import {
   Circle,
   CircleCheck,
   StickyNote,
+  Check,
 } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 
@@ -60,6 +61,7 @@ export {
   Circle,
   CircleCheck,
   StickyNote,
+  Check,
 };
 
 // Category icons as React components
