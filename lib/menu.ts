@@ -86,6 +86,8 @@ export const SWEET_EXTRAS: Extra[] = [
   { name: "Caramel", price: 5000 },
   { name: "Mật Ong", price: 5000 },
   { name: "Đường", price: 5000 },
+  // A scoop of any ice cream flavour on top, same price as a scoop on its own
+  ...MENU["Ice Cream"].map((i) => ({ name: i.name, price: i.price })),
 ];
 
 export const SAVORY_EXTRAS: Extra[] = [
