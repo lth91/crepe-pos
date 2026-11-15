@@ -62,6 +62,7 @@ export {
   CircleCheck,
   StickyNote,
   Check,
+  IceCreamCone,
 };
 
 // Category icons as React components
