@@ -75,6 +75,12 @@ export const MENU: Record<string, MenuItem[]> = {
   ],
 };
 
+/** A scoop of any ice cream flavour on top, same price as a scoop on its own */
+export const ICE_CREAM_EXTRAS: Extra[] = MENU["Ice Cream"].map((i) => ({
+  name: i.name,
+  price: i.price,
+}));
+
 export const SWEET_EXTRAS: Extra[] = [
   { name: "Nutella", price: 10000 },
   { name: "Whipping Cream", price: 10000 },
@@ -86,8 +92,7 @@ export const SWEET_EXTRAS: Extra[] = [
   { name: "Caramel", price: 5000 },
   { name: "Mật Ong", price: 5000 },
   { name: "Đường", price: 5000 },
-  // A scoop of any ice cream flavour on top, same price as a scoop on its own
-  ...MENU["Ice Cream"].map((i) => ({ name: i.name, price: i.price })),
+  ...ICE_CREAM_EXTRAS,
 ];
 
 export const SAVORY_EXTRAS: Extra[] = [
