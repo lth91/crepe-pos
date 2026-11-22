@@ -31,6 +31,8 @@ export type StatsData = {
   topItems: { name: string; qty: number; revenue: number }[];
   categoryBreakdown: { name: string; qty: number; revenue: number }[];
   paymentCounts: { method: string; count: number }[];
+  /** Orders in the range that were deleted afterwards */
+  deleted?: { order_count: number; revenue: number };
 };
 
 export type Order = {
@@ -40,6 +42,9 @@ export type Order = {
   items: CartItem[];
   /** Indexes into `items` that have been ticked as made */
   done: number[];
+  /** Set when an admin deleted the order */
+  deleted_at?: string | null;
+  deleted_by?: string | null;
   total: number;
   method: PayMethod;
   staff: string | null;

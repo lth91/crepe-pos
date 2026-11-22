@@ -1,6 +1,6 @@
-import { cookies } from "next/headers";
 import { getDb } from "@/lib/db";
 import { ensureSchema } from "@/lib/schema";
+import { getSession } from "@/lib/session";
 import { validateOrderTotal, NOTE_MAX_LENGTH } from "@/lib/menu";
 import type { PayMethod } from "@/lib/types";
 
@@ -10,8 +10,7 @@ const VALID_METHODS: PayMethod[] = ["cash", "transfer", "card"];
 const ORDER_NO_LOCK_KEY = 727001;
 
 async function isLoggedIn() {
-  const cookieStore = await cookies();
-  return Boolean(cookieStore.get("pos_session"));
+  return (await getSession()) !== null;
 }
 
 type RawItem = {
@@ -57,6 +56,7 @@ export async function GET(req: Request) {
       FROM orders
       WHERE created_at >= ((date_trunc('day', (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - interval '7 hours') + interval '7 hours') AT TIME ZONE 'Asia/Ho_Chi_Minh')
         AND order_no IS NOT NULL
+        AND deleted_at IS NULL
       ORDER BY created_at ASC
     `;
     return Response.json({ orders: rows });
@@ -66,14 +66,37 @@ export async function GET(req: Request) {
   const limit = 20;
   const offset = (page - 1) * limit;
 
+  // Deleted orders: admin only, newest deletion first
+  if (searchParams.get("deleted") === "1") {
+    const session = await getSession();
+    if (session?.role !== "admin") {
+      return Response.json({ error: "Admin only" }, { status: 403 });
+    }
+    const rows = await sql`
+      SELECT id, order_no, items, total, method, staff, done, created_at, deleted_at, deleted_by
+      FROM orders
+      WHERE deleted_at IS NOT NULL
+      ORDER BY deleted_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+    const countResult = await sql`SELECT COUNT(*)::int AS total FROM orders WHERE deleted_at IS NOT NULL`;
+    return Response.json({
+      orders: rows,
+      total: countResult[0].total,
+      page,
+      totalPages: Math.ceil(countResult[0].total / limit),
+    });
+  }
+
   const rows = await sql`
     SELECT id, order_no, items, total, method, staff, done, created_at
     FROM orders
+    WHERE deleted_at IS NULL
     ORDER BY created_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
 
-  const countResult = await sql`SELECT COUNT(*)::int AS total FROM orders`;
+  const countResult = await sql`SELECT COUNT(*)::int AS total FROM orders WHERE deleted_at IS NULL`;
 
   return Response.json({
     orders: rows,
@@ -195,7 +218,7 @@ export async function PATCH(req: Request) {
           ELSE jsonb_set(items -> ${index}::int, '{note}', to_jsonb(${clean}::text))
         END
       )
-      WHERE id = ${id} AND ${index}::int < jsonb_array_length(items)
+      WHERE id = ${id} AND deleted_at IS NULL AND ${index}::int < jsonb_array_length(items)
       RETURNING id, items
     `;
     if (rows.length === 0) {
@@ -216,7 +239,7 @@ export async function PATCH(req: Request) {
         '[]'::jsonb
       )
     END
-    WHERE id = ${id} AND ${index}::int < jsonb_array_length(items)
+    WHERE id = ${id} AND deleted_at IS NULL AND ${index}::int < jsonb_array_length(items)
     RETURNING id, done
   `;
 
@@ -227,19 +250,33 @@ export async function PATCH(req: Request) {
   return Response.json({ ok: true, done: rows[0].done });
 }
 
+/** Soft-delete an order (admin only). It stays in the database with who/when for review. */
 export async function DELETE(req: Request) {
-  if (!(await isLoggedIn())) {
+  const session = await getSession();
+  if (!session) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.role !== "admin") {
+    return Response.json({ error: "Chỉ admin mới được xoá đơn" }, { status: 403 });
   }
 
   const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
-  if (!id) {
+  const id = Number(searchParams.get("id"));
+  if (!Number.isInteger(id)) {
     return Response.json({ error: "Missing order id" }, { status: 400 });
   }
 
+  await ensureSchema();
   const sql = getDb();
-  await sql`DELETE FROM orders WHERE id = ${Number(id)}`;
+  const rows = await sql`
+    UPDATE orders
+    SET deleted_at = NOW(), deleted_by = ${session.id}
+    WHERE id = ${id} AND deleted_at IS NULL
+    RETURNING id
+  `;
+  if (rows.length === 0) {
+    return Response.json({ error: "Order not found" }, { status: 404 });
+  }
 
   return Response.json({ ok: true });
 }

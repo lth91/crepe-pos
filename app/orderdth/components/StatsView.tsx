@@ -289,6 +289,24 @@ export function StatsView({
               </div>
             </div>
 
+            {/* Deleted orders in this range */}
+            {data.deleted && data.deleted.order_count > 0 && (
+              <button
+                onClick={onHistory}
+                className="mx-4 my-3 flex w-[calc(100%-2rem)] items-center justify-between rounded-xl bg-red-50 px-4 py-3 text-left active:bg-red-100"
+              >
+                <span>
+                  <span className="block text-sm font-medium text-red-700">
+                    {data.deleted.order_count} đơn đã bị xoá
+                  </span>
+                  <span className="block text-xs text-red-500">
+                    Không tính vào doanh thu · xem ở Lịch sử, tab Đã xoá
+                  </span>
+                </span>
+                <span className="text-sm font-semibold text-red-700">{fmt(Number(data.deleted.revenue))}</span>
+              </button>
+            )}
+
             {/* Payment */}
             <div className="px-4 py-4">
               <SectionLabel>Thanh toán</SectionLabel>

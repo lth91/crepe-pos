@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { getDb } from "@/lib/db";
+import { ensureSchema } from "@/lib/schema";
 import {
   businessDateOf,
   businessDayStart,
@@ -83,11 +84,12 @@ export async function GET(req: Request) {
   const range = searchParams.get("range") || "today";
   const customFrom = searchParams.get("from") || undefined;
   const customTo = searchParams.get("to") || undefined;
+  await ensureSchema();
   const sql = getDb();
   const now = new Date();
   const { start, end, prevStart, prevEnd } = dateRange(range, now, customFrom, customTo);
 
-  const [summary, prevSummary, daily, hourly, shifts, topItems, categoryBreakdown, paymentCounts] =
+  const [summary, prevSummary, daily, hourly, shifts, topItems, categoryBreakdown, paymentCounts, deleted] =
     await Promise.all([
       sql`
         SELECT
@@ -100,14 +102,14 @@ export async function GET(req: Request) {
           COALESCE(SUM(CASE WHEN method = 'transfer' THEN total ELSE 0 END), 0)::bigint AS transfer_revenue,
           COALESCE(SUM(CASE WHEN method = 'card' THEN total ELSE 0 END), 0)::bigint AS card_revenue
         FROM orders
-        WHERE created_at >= ${start} AND created_at < ${end}
+        WHERE created_at >= ${start} AND created_at < ${end} AND deleted_at IS NULL
       `,
       sql`
         SELECT
           COUNT(*)::int AS order_count,
           COALESCE(SUM(total), 0)::bigint AS revenue
         FROM orders
-        WHERE created_at >= ${prevStart} AND created_at < ${prevEnd}
+        WHERE created_at >= ${prevStart} AND created_at < ${prevEnd} AND deleted_at IS NULL
       `,
       sql`
         SELECT
@@ -115,7 +117,7 @@ export async function GET(req: Request) {
           COUNT(*)::int AS order_count,
           SUM(total)::bigint AS revenue
         FROM orders
-        WHERE created_at >= ${start} AND created_at < ${end}
+        WHERE created_at >= ${start} AND created_at < ${end} AND deleted_at IS NULL
         GROUP BY 1
         ORDER BY date ASC
         LIMIT 90
@@ -126,7 +128,7 @@ export async function GET(req: Request) {
           COUNT(*)::int AS order_count,
           SUM(total)::bigint AS revenue
         FROM orders
-        WHERE created_at >= ${start} AND created_at < ${end}
+        WHERE created_at >= ${start} AND created_at < ${end} AND deleted_at IS NULL
         GROUP BY 1
         ORDER BY hour
       `,
@@ -141,7 +143,7 @@ export async function GET(req: Request) {
           COUNT(*)::int AS order_count,
           COALESCE(SUM(total), 0)::bigint AS revenue
         FROM orders
-        WHERE created_at >= ${start} AND created_at < ${end}
+        WHERE created_at >= ${start} AND created_at < ${end} AND deleted_at IS NULL
         GROUP BY 1
       `,
       sql`
@@ -150,7 +152,7 @@ export async function GET(req: Request) {
           SUM((item->>'qty')::int)::int AS qty,
           SUM((item->>'price')::bigint * (item->>'qty')::int)::bigint AS revenue
         FROM orders, jsonb_array_elements(items) AS item
-        WHERE created_at >= ${start} AND created_at < ${end}
+        WHERE created_at >= ${start} AND created_at < ${end} AND deleted_at IS NULL
         GROUP BY item->>'name'
         ORDER BY qty DESC
         LIMIT 15
@@ -163,7 +165,7 @@ export async function GET(req: Request) {
             ((item->>'price')::bigint * (item->>'qty')::int)
           )::bigint AS revenue
         FROM orders, jsonb_array_elements(items) AS item
-        WHERE created_at >= ${start} AND created_at < ${end}
+        WHERE created_at >= ${start} AND created_at < ${end} AND deleted_at IS NULL
         GROUP BY item->>'name'
       `,
       sql`
@@ -171,8 +173,14 @@ export async function GET(req: Request) {
           method,
           COUNT(*)::int AS count
         FROM orders
-        WHERE created_at >= ${start} AND created_at < ${end}
+        WHERE created_at >= ${start} AND created_at < ${end} AND deleted_at IS NULL
         GROUP BY method
+      `,
+      // Orders created in this range that were later deleted
+      sql`
+        SELECT COUNT(*)::int AS order_count, COALESCE(SUM(total), 0)::bigint AS revenue
+        FROM orders
+        WHERE created_at >= ${start} AND created_at < ${end} AND deleted_at IS NOT NULL
       `,
     ]);
 
@@ -186,5 +194,6 @@ export async function GET(req: Request) {
     topItems,
     categoryBreakdown,
     paymentCounts,
+    deleted: deleted[0],
   });
 }

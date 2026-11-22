@@ -25,6 +25,9 @@ export function ensureSchema(): Promise<void> {
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_no INTEGER`;
       // Indexes into `items` that the kitchen has ticked as made
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS done JSONB NOT NULL DEFAULT '[]'::jsonb`;
+      // Soft delete: deleted orders are kept for review but excluded from sales
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS deleted_by TEXT`;
       await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at)`;
     })().catch((err) => {
       ready = null;
