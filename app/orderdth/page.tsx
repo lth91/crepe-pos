@@ -264,7 +264,7 @@ export default function POS() {
     return <KitchenView onBack={() => setView("pos")} />;
   }
   if (view === "history") {
-    return <HistoryView onBack={() => setView("pos")} isAdmin={isAdmin} />;
+    return <HistoryView onBack={() => setView("pos")} isAdmin={isAdmin} userId={user.id} />;
   }
   if (receipt) {
     return <ReceiptView {...receipt} onNewOrder={newOrder} />;

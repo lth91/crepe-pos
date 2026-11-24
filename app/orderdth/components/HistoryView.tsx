@@ -2,14 +2,47 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { Order } from "@/lib/types";
-import { fmt, itemTotal } from "@/lib/menu";
+import {
+  fmt,
+  itemTotal,
+  STAFF_DELETE_WINDOW_MINUTES,
+  DELETE_REASON_MAX_LENGTH,
+  DELETE_REASON_PRESETS,
+} from "@/lib/menu";
 import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Loader2, Trash2 } from "@/lib/icons";
 
-export function HistoryView({ onBack, isAdmin }: { onBack: () => void; isAdmin?: boolean }) {
+type Props = { onBack: () => void; isAdmin?: boolean; userId?: string };
+
+const DELETE_WINDOW_MS = STAFF_DELETE_WINDOW_MINUTES * 60_000;
+
+export function HistoryView({ onBack, isAdmin, userId }: Props) {
   // Admins can switch to the list of deleted orders
   const [showDeleted, setShowDeleted] = useState(false);
-  // First tap arms the delete button, second tap deletes
+  // The order whose delete panel is open, and the reason typed so far
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const [reason, setReason] = useState("");
+  // Ticks so staff delete buttons disappear once their time window passes
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  /** Admin: any order. Staff: own orders, within the first few minutes. */
+  function canDelete(order: Order) {
+    if (isAdmin) return true;
+    return order.staff === userId && now - new Date(order.created_at).getTime() < DELETE_WINDOW_MS;
+  }
+
+  function minutesLeft(order: Order) {
+    return Math.max(1, Math.ceil((DELETE_WINDOW_MS - (now - new Date(order.created_at).getTime())) / 60_000));
+  }
+
+  function openDeletePanel(id: number) {
+    setConfirmingId(id);
+    setReason("");
+  }
   const [orders, setOrders] = useState<Order[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -19,14 +52,14 @@ export function HistoryView({ onBack, isAdmin }: { onBack: () => void; isAdmin?:
   const [deleting, setDeleting] = useState<number | null>(null);
 
   async function deleteOrder(id: number) {
-    if (deleting) return;
-    if (confirmingId !== id) {
-      setConfirmingId(id);
-      return;
-    }
+    if (deleting || !reason.trim()) return;
     setDeleting(id);
     try {
-      const res = await fetch(`/api/orders?id=${id}`, { method: "DELETE" });
+      const res = await fetch("/api/orders", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, reason: reason.trim() }),
+      });
       if (res.ok) {
         setOrders((prev) => prev.filter((o) => o.id !== id));
         setExpanded(null);
@@ -147,9 +180,14 @@ export function HistoryView({ onBack, isAdmin }: { onBack: () => void; isAdmin?:
                     {order.staff && <> · <span className="text-zinc-500 font-medium">{order.staff}</span></>}
                   </p>
                   {order.deleted_at && (
-                    <p className="text-sm font-medium text-red-600">
-                      Đã xoá bởi {order.deleted_by || "?"} · {fmtTime(order.deleted_at)}
-                    </p>
+                    <>
+                      <p className="text-sm font-medium text-red-600">
+                        Đã xoá bởi {order.deleted_by || "?"} · {fmtTime(order.deleted_at)}
+                      </p>
+                      {order.delete_reason && (
+                        <p className="text-sm text-red-500">Lý do: {order.delete_reason}</p>
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -177,23 +215,68 @@ export function HistoryView({ onBack, isAdmin }: { onBack: () => void; isAdmin?:
                       {item.note && <p className="font-medium text-amber-700">Ghi chú: {item.note}</p>}
                     </div>
                   ))}
-                  {isAdmin && !showDeleted && (
+                  {!showDeleted && canDelete(order) && confirmingId !== order.id && (
                     <button
-                      onClick={() => deleteOrder(order.id)}
-                      disabled={deleting === order.id}
-                      className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-medium disabled:opacity-50 ${
-                        confirmingId === order.id
-                          ? "bg-red-600 text-white active:bg-red-700"
-                          : "border border-red-200 text-red-500 active:bg-red-50"
-                      }`}
+                      onClick={() => openDeletePanel(order.id)}
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 py-3 text-sm font-medium text-red-500 active:bg-red-50"
                     >
-                      {deleting === order.id ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={14} />
+                      <Trash2 size={14} />
+                      Xoá đơn hàng
+                      {!isAdmin && (
+                        <span className="font-normal text-red-400">
+                          · còn {minutesLeft(order)} phút
+                        </span>
                       )}
-                      {confirmingId === order.id ? "Bấm lần nữa để xác nhận xoá" : "Xoá đơn hàng"}
                     </button>
+                  )}
+                  {!showDeleted && confirmingId === order.id && (
+                    <div className="mt-2 space-y-2.5 rounded-xl border border-red-200 bg-white p-3">
+                      <p className="text-sm font-medium text-zinc-800">Lý do xoá đơn?</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {DELETE_REASON_PRESETS.map((preset) => (
+                          <button
+                            key={preset}
+                            onClick={() => setReason(preset)}
+                            className={`rounded-full px-3 py-2 text-sm ${
+                              reason === preset
+                                ? "bg-zinc-900 font-medium text-white"
+                                : "bg-zinc-100 text-zinc-600 active:bg-zinc-200"
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        maxLength={DELETE_REASON_MAX_LENGTH}
+                        placeholder="Hoặc ghi lý do khác..."
+                        className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-base text-zinc-700 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setConfirmingId(null)}
+                          disabled={deleting === order.id}
+                          className="flex-1 rounded-xl border border-zinc-200 py-3 text-sm font-medium text-zinc-600 active:bg-zinc-50"
+                        >
+                          Huỷ
+                        </button>
+                        <button
+                          onClick={() => deleteOrder(order.id)}
+                          disabled={!reason.trim() || deleting === order.id}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white active:bg-red-700 disabled:bg-red-200"
+                        >
+                          {deleting === order.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={14} />
+                          )}
+                          Xoá đơn
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

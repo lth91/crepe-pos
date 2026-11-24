@@ -127,6 +127,11 @@ export function fmt(n: number) {
 
 export const NOTE_MAX_LENGTH = 80;
 
+/** Staff may delete their own orders for this long after creating them; after that only admin can. */
+export const STAFF_DELETE_WINDOW_MINUTES = 5;
+export const DELETE_REASON_MAX_LENGTH = 120;
+export const DELETE_REASON_PRESETS = ["Nhập nhầm", "Khách huỷ", "Trùng đơn"];
+
 export function makeCartKey(name: string, extras?: Extra[]) {
   if (!extras || extras.length === 0) return name;
   return name + " + " + extras.map((e) => e.name).sort().join(", ");

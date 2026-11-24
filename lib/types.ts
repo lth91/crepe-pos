@@ -45,6 +45,7 @@ export type Order = {
   /** Set when an admin deleted the order */
   deleted_at?: string | null;
   deleted_by?: string | null;
+  delete_reason?: string | null;
   total: number;
   method: PayMethod;
   staff: string | null;

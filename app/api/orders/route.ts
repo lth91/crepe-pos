@@ -1,7 +1,12 @@
 import { getDb } from "@/lib/db";
 import { ensureSchema } from "@/lib/schema";
 import { getSession } from "@/lib/session";
-import { validateOrderTotal, NOTE_MAX_LENGTH } from "@/lib/menu";
+import {
+  validateOrderTotal,
+  NOTE_MAX_LENGTH,
+  STAFF_DELETE_WINDOW_MINUTES,
+  DELETE_REASON_MAX_LENGTH,
+} from "@/lib/menu";
 import type { PayMethod } from "@/lib/types";
 
 const VALID_METHODS: PayMethod[] = ["cash", "transfer", "card"];
@@ -73,7 +78,7 @@ export async function GET(req: Request) {
       return Response.json({ error: "Admin only" }, { status: 403 });
     }
     const rows = await sql`
-      SELECT id, order_no, items, total, method, staff, done, created_at, deleted_at, deleted_by
+      SELECT id, order_no, items, total, method, staff, done, created_at, deleted_at, deleted_by, delete_reason
       FROM orders
       WHERE deleted_at IS NOT NULL
       ORDER BY deleted_at DESC
@@ -153,6 +158,10 @@ export async function POST(req: Request) {
     );
   }
 
+  // Record who took the order from the login, not from what the browser sends
+  const session = await getSession();
+  const staffId = session?.id ?? (typeof staff === "string" ? staff.slice(0, 50) : null);
+
   await ensureSchema();
   const sql = getDb();
   const [, inserted] = await sql.transaction([
@@ -163,7 +172,7 @@ export async function POST(req: Request) {
         ${JSON.stringify(cleanItems)}::jsonb,
         ${total},
         ${method},
-        ${staff || null},
+        ${staffId || null},
         (
           SELECT COALESCE(MAX(order_no), 0) + 1
           FROM orders
@@ -250,32 +259,58 @@ export async function PATCH(req: Request) {
   return Response.json({ ok: true, done: rows[0].done });
 }
 
-/** Soft-delete an order (admin only). It stays in the database with who/when for review. */
+/**
+ * Soft-delete an order. Body: { id, reason }. The order stays in the database
+ * with who, when and why, for review.
+ * - Admin: any order.
+ * - Staff: only orders they took, within STAFF_DELETE_WINDOW_MINUTES of creating them.
+ */
 export async function DELETE(req: Request) {
   const session = await getSession();
   if (!session) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.role !== "admin") {
-    return Response.json({ error: "Chỉ admin mới được xoá đơn" }, { status: 403 });
-  }
 
-  const { searchParams } = new URL(req.url);
-  const id = Number(searchParams.get("id"));
+  const body = (await req.json().catch(() => null)) as { id?: unknown; reason?: unknown } | null;
+  const id = Number(body?.id);
+  const reason =
+    typeof body?.reason === "string" ? body.reason.trim().slice(0, DELETE_REASON_MAX_LENGTH) : "";
+
   if (!Number.isInteger(id)) {
     return Response.json({ error: "Missing order id" }, { status: 400 });
+  }
+  if (!reason) {
+    return Response.json({ error: "Vui lòng ghi lý do xoá" }, { status: 400 });
   }
 
   await ensureSchema();
   const sql = getDb();
+  const isAdmin = session.role === "admin";
   const rows = await sql`
     UPDATE orders
-    SET deleted_at = NOW(), deleted_by = ${session.id}
-    WHERE id = ${id} AND deleted_at IS NULL
+    SET deleted_at = NOW(), deleted_by = ${session.id}, delete_reason = ${reason}
+    WHERE id = ${id}
+      AND deleted_at IS NULL
+      AND (
+        ${isAdmin}::boolean
+        OR (
+          staff = ${session.id}
+          AND created_at > NOW() - make_interval(mins => ${STAFF_DELETE_WINDOW_MINUTES}::int)
+        )
+      )
     RETURNING id
   `;
+
   if (rows.length === 0) {
-    return Response.json({ error: "Order not found" }, { status: 404 });
+    if (isAdmin) {
+      return Response.json({ error: "Không tìm thấy đơn" }, { status: 404 });
+    }
+    return Response.json(
+      {
+        error: `Chỉ được xoá đơn của mình trong ${STAFF_DELETE_WINDOW_MINUTES} phút đầu. Hãy báo admin.`,
+      },
+      { status: 403 }
+    );
   }
 
   return Response.json({ ok: true });
